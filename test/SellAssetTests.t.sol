@@ -10,6 +10,7 @@ import "../src/RateLimiter.sol";
 
 contract SellAssetTests is Test {
     ERC20Mock internal mockAssetToken;
+    address internal mockAssetOracle;
     OracleModule internal oracleModule;
     RateLimiter internal rateLimiter;
     EbtcBSM internal bsmTester;
@@ -20,7 +21,8 @@ contract SellAssetTests is Test {
 
     function setUp() public {
         mockAssetToken = new ERC20Mock();
-        oracleModule = new OracleModule();
+        mockAssetOracle = vm.addr(0x12345);
+        oracleModule = new OracleModule(mockAssetOracle);
         rateLimiter = new RateLimiter();
         testMinter = vm.addr(0x11111);
         highSecTimelock = 0xaDDeE229Bd103bb5B10C3CdB595A01c425dd3264;

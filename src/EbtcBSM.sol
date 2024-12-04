@@ -175,8 +175,8 @@ contract EbtcBSM is Pausable, AuthNoOwner {
     }
 
     function updateAssetVault(address newVault) external requiresAuth {
-        // migrate asset tokens
-        uint256 bal = assetVault.totalBalance();
+        // only migrate user balance, accumulated fees will be claimed separately
+        uint256 bal = assetVault.depositAmount();
         assetVault.beforeWithdraw(bal, 0);
         ASSET_TOKEN.safeTransferFrom(address(assetVault), newVault, bal);
         IAssetVault(newVault).afterDeposit(bal, 0);

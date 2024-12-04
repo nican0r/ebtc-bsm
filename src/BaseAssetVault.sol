@@ -40,22 +40,39 @@ contract BaseAssetVault is AuthNoOwner {
         ASSET_TOKEN.approve(BSM, type(uint256).max);
     }
 
-    function totalBalance() external view returns (uint256) {
+    function _totalBalance() internal virtual view returns (uint256) {
         return ASSET_TOKEN.balanceOf(address(this));
     }
 
-    function afterDeposit(uint256 assetAmount, uint256 feeAmount) external onlyBSM {
+    function _afterDeposit(uint256 assetAmount, uint256 feeAmount) internal virtual {
         depositAmount += assetAmount;
     }
 
-    function beforeWithdraw(uint256 assetAmount, uint256 feeAmount) external onlyBSM {
+    function _beforeWithdraw(uint256 assetAmount, uint256 feeAmount) internal virtual {
         depositAmount -= assetAmount;
     }
 
+    function _withdrawFee(uint256 amount) internal virtual returns (uint256) {
+        // do nothing
+    }
+
+    function totalBalance() external view returns (uint256) {
+        return _totalBalance();
+    }
+
+    function afterDeposit(uint256 assetAmount, uint256 feeAmount) external onlyBSM {
+        _afterDeposit(assetAmount, feeAmount);
+    }
+
+    function beforeWithdraw(uint256 assetAmount, uint256 feeAmount) external onlyBSM {
+        _beforeWithdraw(assetAmount, feeAmount);
+    }
+
     function withdrawProfit() external requiresAuth {
-        uint256 profit = ASSET_TOKEN.balanceOf(address(this)) - depositAmount;
+        uint256 profit = _totalBalance() - depositAmount;
         if (profit > 0) {
-            ASSET_TOKEN.safeTransfer(FEE_RECIPIENT, profit);
+            uint256 transferAmount = _withdrawFee(profit);
+            ASSET_TOKEN.safeTransfer(FEE_RECIPIENT, transferAmount);
         }
     }
 }
