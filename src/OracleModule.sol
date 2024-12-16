@@ -6,29 +6,30 @@ import {IPriceFeed} from "./Dependencies/IPriceFeed.sol";
 import {AggregatorV3Interface} from "./Dependencies/AggregatorV3Interface.sol";
 
 contract OracleModule is AuthNoOwner {
-    IPriceFeed public constant PRICE_FEED =
-        IPriceFeed(0xa9a65B1B1dDa8376527E89985b221B6bfCA1Dc9a);
-    address public constant GOVERNANCE =
-        0x2A095d44831C26cFB6aCb806A6531AE3CA32DBc1;
     uint256 public constant BPS = 10000;
 
+    IPriceFeed public immutable PRICE_FEED;
     AggregatorV3Interface public immutable ASSET_FEED;
     uint256 public immutable ASSET_FEED_PRECISION;
 
     uint256 public minPriceBPS;
+    uint256 public oracleFreshnessSeconds;
 
     event MinPriceUpdated(uint256 oldMinPrice, uint256 newMinPrice);
 
-    constructor(address _assetFeed) {
+    constructor(address _assetFeed, address _ebtcFeed, address _governance) {
         ASSET_FEED = AggregatorV3Interface(_assetFeed);
         ASSET_FEED_PRECISION = 10 ** ASSET_FEED.decimals();
-        _initializeAuthority(GOVERNANCE);
+        PRICE_FEED = IPriceFeed(_ebtcFeed);
+        _initializeAuthority(_governance);
+        minPriceBPS = BPS;
+        oracleFreshnessSeconds = 1 days;
     }
 
     function _getAssetPrice() private view returns (uint256) {
         (, int256 answer, , uint256 updatedAt,) = ASSET_FEED.latestRoundData();
         require(answer > 0);
-        // TODO: check updatedAt
+        require((block.timestamp - updatedAt) <= oracleFreshnessSeconds);
         return (uint256(answer) * 1e18) / ASSET_FEED_PRECISION;
     }
 
@@ -37,9 +38,7 @@ contract OracleModule is AuthNoOwner {
     }
 
     function canMint() external returns (bool) {
-        uint256 assetPrice = _getAssetPrice();
-
-        return assetPrice >= _minAcceptablePrice();
+        return _getAssetPrice() >= _minAcceptablePrice();
     }
 
     function setMinPriceBPS(uint256 _minPriceBPS) external requiresAuth {

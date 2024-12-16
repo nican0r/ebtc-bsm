@@ -52,7 +52,7 @@ contract BaseAssetVault is AuthNoOwner {
         depositAmount -= assetAmount;
     }
 
-    function _withdrawFee(uint256 amount) internal virtual returns (uint256) {
+    function _rebalance(uint256 additionalAmountRequired) internal virtual {
         // do nothing
     }
 
@@ -68,11 +68,17 @@ contract BaseAssetVault is AuthNoOwner {
         _beforeWithdraw(assetAmount, feeAmount);
     }
 
+    function feeProfit() public view returns (uint256) {
+        return _totalBalance() - depositAmount;
+    }
+
     function withdrawProfit() external requiresAuth {
-        uint256 profit = _totalBalance() - depositAmount;
+        uint256 profit = feeProfit();
         if (profit > 0) {
-            uint256 transferAmount = _withdrawFee(profit);
-            ASSET_TOKEN.safeTransfer(FEE_RECIPIENT, transferAmount);
+            _rebalance(profit);
+            ASSET_TOKEN.safeTransfer(FEE_RECIPIENT, profit);
+            // INVARIANT: total balance must be >= deposit amount
+            require(_totalBalance() >= depositAmount);
         }
     }
 }

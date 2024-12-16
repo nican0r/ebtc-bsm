@@ -9,7 +9,7 @@ import {IActivePool} from "./Dependencies/IActivePool.sol";
 import {IAssetVault, BaseAssetVault} from "./BaseAssetVault.sol";
 
 interface IRateLimiter {
-    function canMint(uint256 amount) external returns (bool);
+    function checkMint(uint256 amount) external;
 }
 
 interface IOracleModule {
@@ -19,21 +19,16 @@ interface IOracleModule {
 contract EbtcBSM is Pausable, AuthNoOwner {
     using SafeERC20 for IERC20;
 
-    IEbtcToken public constant EBTC_TOKEN =
-        IEbtcToken(0x661c70333AA1850CcDBAe82776Bb436A0fCfeEfB);
-    IActivePool public constant ACTIVE_POOL =
-        IActivePool(0x6dBDB6D420c110290431E863A1A978AE53F69ebC);
-    address public immutable FEE_RECIPIENT =
-        0x2CEB95D4A67Bf771f1165659Df3D11D8871E906f;
-    address public immutable GOVERNANCE =
-        0x2A095d44831C26cFB6aCb806A6531AE3CA32DBc1;
     uint256 public constant BPS = 10000;
     uint256 public constant MAX_FEE = 2000;
 
-    //
+    // Immutables
     IERC20 public immutable ASSET_TOKEN;
     IRateLimiter public immutable RATE_LIMITER;
     IOracleModule public immutable ORACLE_MODULE;
+    IEbtcToken public immutable EBTC_TOKEN;
+    IActivePool public immutable ACTIVE_POOL;
+    address public immutable FEE_RECIPIENT;
 
     uint256 public feeToBuyBPS;
     uint256 public feeToSellBPS;
@@ -63,19 +58,26 @@ contract EbtcBSM is Pausable, AuthNoOwner {
     constructor(
         address _assetToken,
         address _rateLimiter,
-        address _oracleModule
+        address _oracleModule,
+        address _ebtcToken,
+        address _activePool,
+        address _feeRecipient,
+        address _governance
     ) {
         ASSET_TOKEN = IERC20(_assetToken);
         RATE_LIMITER = IRateLimiter(_rateLimiter);
         ORACLE_MODULE = IOracleModule(_oracleModule);
-        _initializeAuthority(GOVERNANCE);
+        EBTC_TOKEN = IEbtcToken(_ebtcToken);
+        ACTIVE_POOL = IActivePool(_activePool);
+        FEE_RECIPIENT = _feeRecipient;
+        _initializeAuthority(_governance);
 
         assetVault = IAssetVault(
             address(
                 new BaseAssetVault(
                     _assetToken,
                     address(this),
-                    GOVERNANCE,
+                    _governance,
                     FEE_RECIPIENT
                 )
             )
@@ -105,9 +107,7 @@ contract EbtcBSM is Pausable, AuthNoOwner {
         if (!ORACLE_MODULE.canMint()) {
             revert BadOracleRate();
         }
-        if (!RATE_LIMITER.canMint(_amount)) {
-            revert RateLimited();
-        }
+        RATE_LIMITER.checkMint(_amount);
 
         uint256 feeAmount = _calcBuyFee(_amount);
         uint256 transferInAmount = _amount + feeAmount;
@@ -177,9 +177,11 @@ contract EbtcBSM is Pausable, AuthNoOwner {
     function updateAssetVault(address newVault) external requiresAuth {
         // only migrate user balance, accumulated fees will be claimed separately
         uint256 bal = assetVault.depositAmount();
-        assetVault.beforeWithdraw(bal, 0);
-        ASSET_TOKEN.safeTransferFrom(address(assetVault), newVault, bal);
-        IAssetVault(newVault).afterDeposit(bal, 0);
+        if (bal > 0) {
+            assetVault.beforeWithdraw(bal, 0);
+            ASSET_TOKEN.safeTransferFrom(address(assetVault), newVault, bal);
+            IAssetVault(newVault).afterDeposit(bal, 0);
+        }
 
         emit AssetVaultUpdated(address(assetVault), newVault);
         assetVault = IAssetVault(newVault);

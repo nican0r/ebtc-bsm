@@ -3,8 +3,11 @@ pragma solidity ^0.8.25;
 
 import {BaseAssetVault} from "./BaseAssetVault.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract ERC4626AssetVault is BaseAssetVault {
+    using SafeERC20 for IERC20;
+
     uint256 public constant BPS = 10000;
     IERC4626 public immutable EXTERNAL_VAULT;
 
@@ -19,6 +22,8 @@ contract ERC4626AssetVault is BaseAssetVault {
         address _governance,
         address _feeRecipient
     ) BaseAssetVault(_assetToken, _bsm, _governance, _feeRecipient) {
+        EXTERNAL_VAULT = IERC4626(_externalVault);
+
         // 100% buffer = no external lending
         liquidityBuffer = BPS;
     }
@@ -30,12 +35,7 @@ contract ERC4626AssetVault is BaseAssetVault {
         // get updated depositAmount
         super._afterDeposit(assetAmount, feeAmount);
 
-        uint256 bufferAmount = depositAmount * liquidityBuffer / BPS;
-        uint256 assetBalance = super._totalBalance();
-        if (assetBalance > bufferAmount) {
-            uint256 depositAmount = assetBalance - bufferAmount;
-            EXTERNAL_VAULT.deposit(depositAmount, address(this));        
-        }
+        _rebalance(0);
     }
 
     function _beforeWithdraw(
@@ -45,19 +45,26 @@ contract ERC4626AssetVault is BaseAssetVault {
         // get updated depositAmount
         super._beforeWithdraw(assetAmount, feeAmount);
 
-        uint256 bufferAmount = depositAmount * liquidityBuffer / BPS + assetAmount;
-        uint256 assetBalance = super._totalBalance();
-        
-        if (assetBalance < bufferAmount) {
-            uint256 withdrawAmount = bufferAmount - assetBalance;
-            EXTERNAL_VAULT.withdraw(withdrawAmount, address(this), address(this));
-        }
+        // include assetAmount in liquid buffer for BSM withdraw request
+        _rebalance(assetAmount);
     }
 
-    function _withdrawFee(uint256 amount) internal override returns (uint256) {
-        uint256 amountBefore = ASSET_TOKEN.balanceOf(address(this));
-        EXTERNAL_VAULT.withdraw(amount, address(this), address(this));
-        return ASSET_TOKEN.balanceOf(address(this)) - amountBefore;
+    function _rebalance(uint256 additionalAmountRequired) internal override {
+        uint256 liquidBufferAmount = depositAmount * liquidityBuffer / BPS + additionalAmountRequired;
+        uint256 liquidBalance = super._totalBalance();
+
+        if (liquidBalance > liquidBufferAmount) {
+            unchecked {
+                uint256 depositAmount = liquidBalance - liquidBufferAmount;
+                ASSET_TOKEN.safeIncreaseAllowance(address(EXTERNAL_VAULT), depositAmount);
+                EXTERNAL_VAULT.deposit(depositAmount, address(this));     
+            }
+        } else if (liquidBalance < liquidBufferAmount) {
+            unchecked {
+                uint256 withdrawAmount = liquidBufferAmount - liquidBalance;
+                EXTERNAL_VAULT.withdraw(withdrawAmount, address(this), address(this));
+            }
+        }
     }
 
     function _totalBalance() internal override view returns (uint256) {
@@ -67,7 +74,11 @@ contract ERC4626AssetVault is BaseAssetVault {
     function setLiquidityBuffer(
         uint256 _liquidityBuffer
     ) external requiresAuth {
-        liquidityBuffer = _liquidityBuffer;
+        require(_liquidityBuffer <= BPS);
+
         emit LiquidityBufferUpdated(liquidityBuffer, _liquidityBuffer);
+        liquidityBuffer = _liquidityBuffer;
+
+        _rebalance(0);
     }
 }
