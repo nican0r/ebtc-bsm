@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import "@openzeppelin/contracts/mocks/token/ERC4626Mock.sol";
 import {MockAssetOracle} from "./mocks/MockAssetOracle.sol";
 import {MockActivePool} from "./mocks/MockActivePool.sol";
+import {MockPriceFeed} from "./mocks/MockPriceFeed.sol";
 import "../src/Dependencies/Governor.sol";
 import "../src/Dependencies/IPriceFeed.sol";
 import "../src/EbtcBSM.sol";
@@ -21,6 +22,7 @@ contract SellAssetTests is Test {
     MockAssetOracle internal mockAssetOracle;
     MockAssetOracle internal mockEbtcOracle;
     MockActivePool internal mockActivePool;
+    MockPriceFeed internal mockPriceFeed;
     OracleModule internal oracleModule;
     RateLimiter internal rateLimiter;
     IPriceFeed internal priceFeed;
@@ -29,7 +31,6 @@ contract SellAssetTests is Test {
     Governor internal authority;
     address internal defaultGovernance;
     address internal defaultFeeRecipient;
-    address internal highSecTimelock;
     address internal techOpsMultisig;
 
     function setUp() public {
@@ -42,10 +43,10 @@ contract SellAssetTests is Test {
         externalVault = new ERC4626Mock(address(mockAssetToken));
         mockAssetOracle = new MockAssetOracle(18);
         mockEbtcOracle = new MockAssetOracle(18);
-        oracleModule = new OracleModule(address(mockAssetOracle), address(mockEbtcOracle), address(authority));
+        mockPriceFeed = new MockPriceFeed(mockEbtcOracle);
+        oracleModule = new OracleModule(address(mockAssetOracle), address(mockPriceFeed), address(authority));
         rateLimiter = new RateLimiter();
         testMinter = vm.addr(0x11111);
-        highSecTimelock = 0xaDDeE229Bd103bb5B10C3CdB595A01c425dd3264;
         techOpsMultisig = 0x690C74AF48BE029e763E61b4aDeB10E06119D3ba;
 
         bsmTester = new EbtcBSM(
@@ -58,9 +59,12 @@ contract SellAssetTests is Test {
             address(authority)
         );
 
-//        priceFeed = IPriceFeed(oracleModule.PRICE_FEED());
-
-        mockAssetOracle.setPrice(int256(priceFeed.fetchPrice()));
+        // create initial ebtc supply
+        mockEbtcToken.mint(defaultGovernance, 50e18);
+        mockEbtcOracle.setPrice(35648039480226817);
+        mockEbtcOracle.setUpdateTime(block.timestamp);
+        mockAssetOracle.setPrice(mockEbtcOracle.getPrice());
+        mockAssetOracle.setUpdateTime(block.timestamp);
 
         assetVault = new ERC4626AssetVault(
             address(externalVault),
@@ -74,7 +78,7 @@ contract SellAssetTests is Test {
         mockAssetToken.approve(address(bsmTester), type(uint256).max);
         mockAssetToken.mint(testMinter, 10e18);
 
-        vm.startPrank(highSecTimelock);
+        vm.startPrank(defaultGovernance);
         // give eBTC minter and burner roles to BSM tester
         authority.setUserRole(address(bsmTester), 1, true);
         authority.setUserRole(address(bsmTester), 2, true);

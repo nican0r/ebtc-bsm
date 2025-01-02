@@ -16,6 +16,13 @@ contract OracleModule is AuthNoOwner {
     uint256 public oracleFreshnessSeconds;
 
     event MinPriceUpdated(uint256 oldMinPrice, uint256 newMinPrice);
+    event OracleFreshnessUpdated(
+        uint256 oldOracleFreshness,
+        uint256 newOracleFreshness
+    );
+
+    error BadOraclePrice(int256 price);
+    error StaleOraclePrice(uint256 updatedAt);
 
     constructor(address _assetFeed, address _ebtcFeed, address _governance) {
         ASSET_FEED = AggregatorV3Interface(_assetFeed);
@@ -27,22 +34,37 @@ contract OracleModule is AuthNoOwner {
     }
 
     function _getAssetPrice() private view returns (uint256) {
-        (, int256 answer, , uint256 updatedAt,) = ASSET_FEED.latestRoundData();
-        require(answer > 0);
-        require((block.timestamp - updatedAt) <= oracleFreshnessSeconds);
+        (, int256 answer, , uint256 updatedAt, ) = ASSET_FEED.latestRoundData();
+
+        if (answer <= 0) revert BadOraclePrice(answer);
+
+        if ((block.timestamp - updatedAt) > oracleFreshnessSeconds) {
+            revert StaleOraclePrice(updatedAt);
+        }
+
         return (uint256(answer) * 1e18) / ASSET_FEED_PRECISION;
     }
 
     function _minAcceptablePrice() private returns (uint256) {
-        return PRICE_FEED.fetchPrice() * minPriceBPS / BPS;
+        return (PRICE_FEED.fetchPrice() * minPriceBPS) / BPS;
     }
 
     function canMint() external returns (bool) {
         return _getAssetPrice() >= _minAcceptablePrice();
     }
 
-    function setMinPriceBPS(uint256 _minPriceBPS) external requiresAuth {
+    function setMinPrice(uint256 _minPriceBPS) external requiresAuth {
         emit MinPriceUpdated(minPriceBPS, _minPriceBPS);
         minPriceBPS = _minPriceBPS;
+    }
+
+    function setOracleFreshness(
+        uint256 _oracleFreshnessSeconds
+    ) external requiresAuth {
+        emit OracleFreshnessUpdated(
+            oracleFreshnessSeconds,
+            _oracleFreshnessSeconds
+        );
+        oracleFreshnessSeconds = _oracleFreshnessSeconds;
     }
 }
