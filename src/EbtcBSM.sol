@@ -109,7 +109,7 @@ contract EbtcBSM is Pausable, AuthNoOwner {
         }
         RATE_LIMITER.checkMint(_amount);
 
-        uint256 feeAmount = _calcBuyFee(_amount);
+        uint256 feeAmount = _calcSellFee(_amount);
         uint256 transferInAmount = _amount + feeAmount;
         // INVARIANT: transferInAmount >= _amount
         ASSET_TOKEN.safeTransferFrom(
@@ -133,7 +133,7 @@ contract EbtcBSM is Pausable, AuthNoOwner {
 
         totalMinted -= _amount;
 
-        uint256 feeAmount = _calcSellFee(_amount);
+        uint256 feeAmount = _calcBuyFee(_amount);
         uint256 transferOutAmount = _amount - feeAmount;
         assetVault.beforeWithdraw(_amount, feeAmount);
         // INVARIANT: transferOutAmount <= _amount

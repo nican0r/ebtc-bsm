@@ -32,7 +32,7 @@ contract ERC4626AssetVault is BaseAssetVault {
         uint256 assetAmount,
         uint256 feeAmount
     ) internal override {
-        // get updated depositAmount
+        // get updated depositAmount (assetAmount added)
         super._afterDeposit(assetAmount, feeAmount);
 
         _rebalance(0);
@@ -42,7 +42,7 @@ contract ERC4626AssetVault is BaseAssetVault {
         uint256 assetAmount,
         uint256 feeAmount
     ) internal override {
-        // get updated depositAmount
+        // get updated depositAmount (assetAmount removed)
         super._beforeWithdraw(assetAmount, feeAmount);
 
         // include assetAmount in liquid buffer for BSM withdraw request
