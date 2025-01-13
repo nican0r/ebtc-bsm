@@ -12,4 +12,8 @@ contract BuyAssetTests is BSMTestBase {
     function testBuyFee() public {
 
     }
+
+    function testBuyFailAboveDepositAmount() public {
+        
+    }
 }

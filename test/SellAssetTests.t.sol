@@ -10,7 +10,10 @@ contract SellAssetTests is BSMTestBase {
         bsmTester.sellAsset(1e18);
         assertEq(mockAssetToken.balanceOf(testMinter), 9e18);
 
-        assertEq(mockAssetToken.balanceOf(address(bsmTester.assetVault())), 1e18);
+        assertEq(
+            mockAssetToken.balanceOf(address(bsmTester.assetVault())),
+            1e18
+        );
     }
 
     function testSellFeeSuccess() public {
@@ -23,7 +26,10 @@ contract SellAssetTests is BSMTestBase {
         bsmTester.sellAsset(1e18);
         assertEq(mockAssetToken.balanceOf(testMinter), 8.9e18);
 
-        assertEq(mockAssetToken.balanceOf(address(bsmTester.assetVault())), 1e18);
+        assertEq(
+            mockAssetToken.balanceOf(address(bsmTester.assetVault())),
+            1e18
+        );
         assertEq(assetVault.feeProfit(), 0.1e18);
         assertEq(assetVault.depositAmount(), 1e18);
 
@@ -35,18 +41,46 @@ contract SellAssetTests is BSMTestBase {
     }
 
     function testSellFailAboveCap() public {
+        uint256 amountToMint = (mockEbtcToken.totalSupply() *
+            (bsmTester.mintingCapBPS() + 1)) / bsmTester.BPS();
+        uint256 maxMint = (mockEbtcToken.totalSupply() *
+            bsmTester.mintingCapBPS()) / bsmTester.BPS();
 
+        vm.prank(testMinter);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                EbtcBSM.AboveMintingCap.selector,
+                amountToMint,
+                bsmTester.totalMinted() + amountToMint,
+                maxMint
+            )
+        );
+        bsmTester.sellAsset(amountToMint);
     }
 
-    function testSellFailBadPrice() public {
+    function testSellFailBadPrice() public {}
 
-    }
-
-    function testSellFailRateLimit() public {
-
-    }
+    function testSellFailRateLimit() public {}
 
     function testSellFailPaused() public {
+        vm.expectRevert("Auth: UNAUTHORIZED");
+        vm.prank(testMinter);
+        bsmTester.pause();
 
+        vm.prank(techOpsMultisig);
+        bsmTester.pause();
+
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        vm.prank(testMinter);
+        bsmTester.sellAsset(1e18);
+
+        vm.expectRevert("Auth: UNAUTHORIZED");
+        vm.prank(testMinter);
+        bsmTester.unpause();
+
+        vm.prank(techOpsMultisig);
+        bsmTester.unpause();
+
+        testSellSuccess();
     }
 }

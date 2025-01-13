@@ -44,7 +44,11 @@ contract BSMTestBase is Test {
         mockAssetOracle = new MockAssetOracle(18);
         mockEbtcOracle = new MockAssetOracle(18);
         mockPriceFeed = new MockPriceFeed(mockEbtcOracle);
-        oracleModule = new OracleModule(address(mockAssetOracle), address(mockPriceFeed), address(authority));
+        oracleModule = new OracleModule(
+            address(mockAssetOracle),
+            address(mockPriceFeed),
+            address(authority)
+        );
         rateLimiter = new RateLimiter();
         testMinter = vm.addr(0x11111);
         techOpsMultisig = 0x690C74AF48BE029e763E61b4aDeB10E06119D3ba;
@@ -110,7 +114,13 @@ contract BSMTestBase is Test {
         authority.setRoleCapability(
             15,
             address(bsmTester),
-            bsmTester.updateAssetVault.selector,
+            bsmTester.pause.selector,
+            true
+        );
+        authority.setRoleCapability(
+            15,
+            address(bsmTester),
+            bsmTester.unpause.selector,
             true
         );
         authority.setRoleCapability(

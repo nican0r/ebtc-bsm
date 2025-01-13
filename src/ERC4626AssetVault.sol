@@ -46,7 +46,7 @@ contract ERC4626AssetVault is BaseAssetVault {
         super._beforeWithdraw(assetAmount, feeAmount);
 
         // include assetAmount in liquid buffer for BSM withdraw request
-        _rebalance(assetAmount);
+        _rebalance(assetAmount - feeAmount);
     }
 
     function _rebalance(uint256 additionalAmountRequired) internal override {

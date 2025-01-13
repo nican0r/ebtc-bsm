@@ -54,6 +54,7 @@ contract EbtcBSM is Pausable, AuthNoOwner {
     );
     error BadOracleRate();
     error RateLimited();
+    error InsufficientAssetTokens(uint256 required, uint256 available);
 
     constructor(
         address _assetToken,
@@ -128,6 +129,10 @@ contract EbtcBSM is Pausable, AuthNoOwner {
 
     function buyAsset(uint256 _amount) external whenNotPaused {
         // TODO: figure out if we need to check oracle price here
+        uint256 depositAmount = assetVault.depositAmount();
+        if (_amount > depositAmount) {
+            revert InsufficientAssetTokens(_amount, depositAmount);
+        }
 
         EBTC_TOKEN.burn(msg.sender, _amount);
 
