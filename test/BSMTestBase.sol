@@ -28,6 +28,7 @@ contract BSMTestBase is Test {
     IPriceFeed internal priceFeed;
     EbtcBSM internal bsmTester;
     address internal testMinter;
+    address internal testBuyer;
     Governor internal authority;
     address internal defaultGovernance;
     address internal defaultFeeRecipient;
@@ -51,6 +52,7 @@ contract BSMTestBase is Test {
         );
         rateLimiter = new RateLimiter();
         testMinter = vm.addr(0x11111);
+        testBuyer = vm.addr(0x22222);
         techOpsMultisig = 0x690C74AF48BE029e763E61b4aDeB10E06119D3ba;
 
         bsmTester = new EbtcBSM(
@@ -81,6 +83,9 @@ contract BSMTestBase is Test {
         vm.prank(testMinter);
         mockAssetToken.approve(address(bsmTester), type(uint256).max);
         mockAssetToken.mint(testMinter, 10e18);
+
+        vm.prank(testBuyer);
+        mockEbtcToken.mint(testBuyer, 10e18);
 
         vm.startPrank(defaultGovernance);
         // give eBTC minter and burner roles to BSM tester
@@ -133,6 +138,12 @@ contract BSMTestBase is Test {
             15,
             address(assetVault),
             assetVault.setLiquidityBuffer.selector,
+            true
+        );
+        authority.setRoleCapability(
+            15,
+            address(oracleModule),
+            oracleModule.setMinPrice.selector,
             true
         );
         authority.setUserRole(techOpsMultisig, 15, true);

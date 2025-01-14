@@ -6,9 +6,11 @@ import "./BSMTestBase.sol";
 contract SellAssetTests is BSMTestBase {
     function testSellSuccess() public {
         assertEq(mockAssetToken.balanceOf(testMinter), 10e18);
+        assertEq(mockEbtcToken.balanceOf(testMinter), 0);
         vm.prank(testMinter);
         bsmTester.sellAsset(1e18);
         assertEq(mockAssetToken.balanceOf(testMinter), 9e18);
+        assertEq(mockEbtcToken.balanceOf(testMinter), 1e18);
 
         assertEq(
             mockAssetToken.balanceOf(address(bsmTester.assetVault())),
@@ -58,9 +60,25 @@ contract SellAssetTests is BSMTestBase {
         bsmTester.sellAsset(amountToMint);
     }
 
-    function testSellFailBadPrice() public {}
+    function testSellFailBadPrice() public {
+        vm.expectRevert("Auth: UNAUTHORIZED");
+        vm.prank(testMinter);
+        oracleModule.setMinPrice(9000);
 
-    function testSellFailRateLimit() public {}
+        // set min price to 90%
+        vm.prank(techOpsMultisig);
+        oracleModule.setMinPrice(9000);
+
+        mockAssetOracle.setPrice(int(uint256(mockEbtcOracle.getPrice()) * 8999 / oracleModule.BPS()));
+
+        vm.expectRevert(abi.encodeWithSelector(EbtcBSM.BadOracleRate.selector));
+        vm.prank(testMinter);
+        bsmTester.sellAsset(1e18);
+    }
+
+    function testSellFailRateLimit() public {
+        
+    }
 
     function testSellFailPaused() public {
         vm.expectRevert("Auth: UNAUTHORIZED");
@@ -70,7 +88,7 @@ contract SellAssetTests is BSMTestBase {
         vm.prank(techOpsMultisig);
         bsmTester.pause();
 
-        vm.expectRevert(Pausable.EnforcedPause.selector);
+        vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
         vm.prank(testMinter);
         bsmTester.sellAsset(1e18);
 
