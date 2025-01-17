@@ -8,4 +8,31 @@ contract GovernanceTests is BSMTestBase {
     function testClaimProfit() public {
 
     }
+
+    function testSetAuthorizedUser() public {
+
+    }
+
+    function testSetBuyFee() public {
+
+    }
+
+    function testSetSellFee() public {
+    }
+
+    function testSetMintingCap() public {
+
+    }
+
+    function testSetMinPrice() public {
+
+    }
+
+    function testSetOracleFreshness() public {
+
+    }
+
+    function setLiquidityBuffer() public {
+
+    }
 }

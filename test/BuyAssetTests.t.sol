@@ -11,14 +11,47 @@ contract BuyAssetTests is BSMTestBase {
 
         assertEq(mockAssetToken.balanceOf(testBuyer), 0);
         assertEq(mockEbtcToken.balanceOf(testBuyer), 10e18);
+
+        // TODO: test events
+
         vm.prank(testBuyer);
-        bsmTester.buyAsset(3e18);
+        assertEq(bsmTester.buyAsset(3e18), 3e18);
+
         assertEq(mockAssetToken.balanceOf(testBuyer), 3e18);
         assertEq(mockEbtcToken.balanceOf(testBuyer), 7e18);
     }
 
     function testBuyFee() public {
+        // 1% fee
+        vm.prank(techOpsMultisig);
+        bsmTester.setFeeToBuy(100);
 
+        vm.prank(testMinter);
+        bsmTester.sellAsset(5e18);
+
+        assertEq(mockAssetToken.balanceOf(testBuyer), 0);
+        assertEq(mockEbtcToken.balanceOf(testBuyer), 10e18);
+
+        // TODO: test events
+
+        vm.prank(testBuyer);
+        assertEq(bsmTester.buyAsset(1e18), 0.99e18);
+
+        assertEq(mockAssetToken.balanceOf(testBuyer), 0.99e18);
+        assertEq(mockEbtcToken.balanceOf(testBuyer), 9e18);
+
+        assertEq(assetVault.feeProfit(), 0.01e18);
+        assertEq(assetVault.depositAmount(), 4e18);
+
+        vm.prank(techOpsMultisig);
+        assetVault.withdrawProfit();
+
+        assertEq(mockAssetToken.balanceOf(defaultFeeRecipient), 0.01e18);
+        assertEq(assetVault.feeProfit(), 0);
+    }
+
+    function testBuyFeeAuthorizedUser() public {
+        
     }
 
     function testBuyFailAboveDepositAmount() public {

@@ -3,9 +3,10 @@ pragma solidity ^0.8.25;
 
 import {AuthNoOwner} from "./Dependencies/AuthNoOwner.sol";
 import {IPriceFeed} from "./Dependencies/IPriceFeed.sol";
+import {IOracleModule} from "./Dependencies/IOracleModule.sol";
 import {AggregatorV3Interface} from "./Dependencies/AggregatorV3Interface.sol";
 
-contract OracleModule is AuthNoOwner {
+contract OracleModule is IOracleModule, AuthNoOwner {
     uint256 public constant BPS = 10000;
 
     IPriceFeed public immutable PRICE_FEED;

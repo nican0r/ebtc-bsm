@@ -7,8 +7,12 @@ contract SellAssetTests is BSMTestBase {
     function testSellSuccess() public {
         assertEq(mockAssetToken.balanceOf(testMinter), 10e18);
         assertEq(mockEbtcToken.balanceOf(testMinter), 0);
+
+        // TODO: test events
+
         vm.prank(testMinter);
-        bsmTester.sellAsset(1e18);
+        assertEq(bsmTester.sellAsset(1e18), 1e18);
+        
         assertEq(mockAssetToken.balanceOf(testMinter), 9e18);
         assertEq(mockEbtcToken.balanceOf(testMinter), 1e18);
 
@@ -19,27 +23,34 @@ contract SellAssetTests is BSMTestBase {
     }
 
     function testSellFeeSuccess() public {
-        // 10% fee
+        // 1% fee
         vm.prank(techOpsMultisig);
-        bsmTester.setFeeToSell(1000);
+        bsmTester.setFeeToSell(100);
 
         assertEq(mockAssetToken.balanceOf(testMinter), 10e18);
+
+        // TODO: test events
         vm.prank(testMinter);
-        bsmTester.sellAsset(1e18);
-        assertEq(mockAssetToken.balanceOf(testMinter), 8.9e18);
+        assertEq(bsmTester.sellAsset(1e18), 1.01e18);
+
+        assertEq(mockAssetToken.balanceOf(testMinter), 8.99e18);
 
         assertEq(
             mockAssetToken.balanceOf(address(bsmTester.assetVault())),
             1e18
         );
-        assertEq(assetVault.feeProfit(), 0.1e18);
+        assertEq(assetVault.feeProfit(), 0.01e18);
         assertEq(assetVault.depositAmount(), 1e18);
 
         vm.prank(techOpsMultisig);
         assetVault.withdrawProfit();
 
-        assertEq(mockAssetToken.balanceOf(defaultFeeRecipient), 0.1e18);
+        assertEq(mockAssetToken.balanceOf(defaultFeeRecipient), 0.01e18);
         assertEq(assetVault.feeProfit(), 0);
+    }
+
+    function testSellFeeAuthorizedUser() public {
+
     }
 
     function testSellFailAboveCap() public {
@@ -74,10 +85,6 @@ contract SellAssetTests is BSMTestBase {
         vm.expectRevert(abi.encodeWithSelector(EbtcBSM.BadOracleRate.selector));
         vm.prank(testMinter);
         bsmTester.sellAsset(1e18);
-    }
-
-    function testSellFailRateLimit() public {
-        
     }
 
     function testSellFailPaused() public {

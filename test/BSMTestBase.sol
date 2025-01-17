@@ -11,7 +11,6 @@ import "../src/Dependencies/Governor.sol";
 import "../src/Dependencies/IPriceFeed.sol";
 import "../src/EbtcBSM.sol";
 import "../src/OracleModule.sol";
-import "../src/RateLimiter.sol";
 import "../src/ERC4626AssetVault.sol";
 
 contract BSMTestBase is Test {
@@ -24,7 +23,6 @@ contract BSMTestBase is Test {
     MockActivePool internal mockActivePool;
     MockPriceFeed internal mockPriceFeed;
     OracleModule internal oracleModule;
-    RateLimiter internal rateLimiter;
     IPriceFeed internal priceFeed;
     EbtcBSM internal bsmTester;
     address internal testMinter;
@@ -50,14 +48,12 @@ contract BSMTestBase is Test {
             address(mockPriceFeed),
             address(authority)
         );
-        rateLimiter = new RateLimiter();
         testMinter = vm.addr(0x11111);
         testBuyer = vm.addr(0x22222);
         techOpsMultisig = 0x690C74AF48BE029e763E61b4aDeB10E06119D3ba;
 
         bsmTester = new EbtcBSM(
             address(mockAssetToken),
-            address(rateLimiter),
             address(oracleModule),
             address(mockEbtcToken),
             address(mockActivePool),
