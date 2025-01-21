@@ -33,7 +33,7 @@ contract BSMTestBase is Test {
     address internal techOpsMultisig;
     address internal testAuthorizedUser;
 
-    function setUp() public {
+    function setUp() public virtual {
         defaultGovernance = vm.addr(0x123456);
         defaultFeeRecipient = vm.addr(0x234567);
         authority = new Governor(defaultGovernance);
