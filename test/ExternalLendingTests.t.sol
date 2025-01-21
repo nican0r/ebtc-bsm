@@ -38,7 +38,37 @@ contract ExternalLendingTests is BSMTestBase {
     }
 
     function testRebalance() public {
+        // increase minting cap
+        mockEbtcToken.mint(address(testMinter), 1000e18);
+        mockAssetToken.mint(address(testMinter), 1e18);
 
+        vm.prank(testMinter);
+        bsmTester.buyEbtcWithAsset(10e18);
+
+        // 100% liquidity
+        assertEq(mockAssetToken.balanceOf(address(assetVault)), 10e18);
+        assertEq(externalVault.balanceOf(address(assetVault)), 0);
+
+        // 70% liquid, 30% external lending
+        vm.prank(techOpsMultisig);
+        assetVault.setLiquidityBuffer(7000);
+
+        assertEq(mockAssetToken.balanceOf(address(assetVault)), 7e18);
+        assertEq(externalVault.balanceOf(address(assetVault)), 3e18);
+
+        // 50/50
+        vm.prank(techOpsMultisig);
+        assetVault.setLiquidityBuffer(5000);
+
+        assertEq(mockAssetToken.balanceOf(address(assetVault)), 5e18);
+        assertEq(externalVault.balanceOf(address(assetVault)), 5e18);
+
+        // 100% external lending
+        vm.prank(techOpsMultisig);
+        assetVault.setLiquidityBuffer(0);
+
+        assertEq(mockAssetToken.balanceOf(address(assetVault)), 0);
+        assertEq(externalVault.balanceOf(address(assetVault)), 10e18);
     }
 
     function testMigrateAssetVault_100PercOld_100PercNew() public {
