@@ -3,15 +3,15 @@ pragma solidity ^0.8.25;
 
 import "./BSMTestBase.sol";
 
-contract SellAssetTests is BSMTestBase {
-    function testSellSuccess() public {
+contract BuyEbtcWithAssetTests is BSMTestBase {
+    function testBuyEbtcSuccess() public {
         assertEq(mockAssetToken.balanceOf(testMinter), 10e18);
         assertEq(mockEbtcToken.balanceOf(testMinter), 0);
 
         // TODO: test events
 
         vm.prank(testMinter);
-        assertEq(bsmTester.sellAsset(1e18), 1e18);
+        assertEq(bsmTester.buyEbtcWithAsset(1e18), 1e18);
         
         assertEq(mockAssetToken.balanceOf(testMinter), 9e18);
         assertEq(mockEbtcToken.balanceOf(testMinter), 1e18);
@@ -22,16 +22,16 @@ contract SellAssetTests is BSMTestBase {
         );
     }
 
-    function testSellFeeSuccess() public {
+    function testBuyEbtcFeeSuccess() public {
         // 1% fee
         vm.prank(techOpsMultisig);
-        bsmTester.setFeeToSell(100);
+        bsmTester.setFeeToBuyEbtc(100);
 
         assertEq(mockAssetToken.balanceOf(testMinter), 10e18);
 
         // TODO: test events
         vm.prank(testMinter);
-        assertEq(bsmTester.sellAsset(1e18), 1.01e18);
+        assertEq(bsmTester.buyEbtcWithAsset(1.01e18), 1e18);
 
         assertEq(mockAssetToken.balanceOf(testMinter), 8.99e18);
 
@@ -49,11 +49,19 @@ contract SellAssetTests is BSMTestBase {
         assertEq(assetVault.feeProfit(), 0);
     }
 
-    function testSellFeeAuthorizedUser() public {
+    function testBuyEbtcFeeAuthorizedUser() public {
+        vm.prank(techOpsMultisig);
+        bsmTester.setFeeToBuyEbtc(100);
 
+        vm.prank(techOpsMultisig);
+        bsmTester.addAuthorizedUser(testAuthorizedUser);
+
+        // TODO: test events
+        vm.prank(testAuthorizedUser);
+        assertEq(bsmTester.buyEbtcWithAsset(1.01e18), 1.01e18);
     }
 
-    function testSellFailAboveCap() public {
+    function testBuyEbtcFailAboveCap() public {
         uint256 amountToMint = (mockEbtcToken.totalSupply() *
             (bsmTester.mintingCapBPS() + 1)) / bsmTester.BPS();
         uint256 maxMint = (mockEbtcToken.totalSupply() *
@@ -68,10 +76,10 @@ contract SellAssetTests is BSMTestBase {
                 maxMint
             )
         );
-        bsmTester.sellAsset(amountToMint);
+        bsmTester.buyEbtcWithAsset(amountToMint);
     }
 
-    function testSellFailBadPrice() public {
+    function testBuyEbtcFailBadPrice() public {
         vm.expectRevert("Auth: UNAUTHORIZED");
         vm.prank(testMinter);
         oracleModule.setMinPrice(9000);
@@ -84,10 +92,10 @@ contract SellAssetTests is BSMTestBase {
 
         vm.expectRevert(abi.encodeWithSelector(EbtcBSM.BadOracleRate.selector));
         vm.prank(testMinter);
-        bsmTester.sellAsset(1e18);
+        bsmTester.buyEbtcWithAsset(1e18);
     }
 
-    function testSellFailPaused() public {
+    function testBuyEbtcFailPaused() public {
         vm.expectRevert("Auth: UNAUTHORIZED");
         vm.prank(testMinter);
         bsmTester.pause();
@@ -97,7 +105,7 @@ contract SellAssetTests is BSMTestBase {
 
         vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
         vm.prank(testMinter);
-        bsmTester.sellAsset(1e18);
+        bsmTester.buyEbtcWithAsset(1e18);
 
         vm.expectRevert("Auth: UNAUTHORIZED");
         vm.prank(testMinter);
@@ -106,6 +114,6 @@ contract SellAssetTests is BSMTestBase {
         vm.prank(techOpsMultisig);
         bsmTester.unpause();
 
-        testSellSuccess();
+        testBuyEbtcSuccess();
     }
 }

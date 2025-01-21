@@ -31,6 +31,7 @@ contract BSMTestBase is Test {
     address internal defaultGovernance;
     address internal defaultFeeRecipient;
     address internal techOpsMultisig;
+    address internal testAuthorizedUser;
 
     function setUp() public {
         defaultGovernance = vm.addr(0x123456);
@@ -50,6 +51,7 @@ contract BSMTestBase is Test {
         );
         testMinter = vm.addr(0x11111);
         testBuyer = vm.addr(0x22222);
+        testAuthorizedUser = vm.addr(0x33333);
         techOpsMultisig = 0x690C74AF48BE029e763E61b4aDeB10E06119D3ba;
 
         bsmTester = new EbtcBSM(
@@ -80,6 +82,13 @@ contract BSMTestBase is Test {
         mockAssetToken.approve(address(bsmTester), type(uint256).max);
         mockAssetToken.mint(testMinter, 10e18);
 
+        vm.startPrank(testAuthorizedUser);
+        mockAssetToken.approve(address(bsmTester), type(uint256).max);
+        mockEbtcToken.approve(address(bsmTester), type(uint256).max);
+        vm.stopPrank();
+        mockAssetToken.mint(testAuthorizedUser, 10e18);
+        mockEbtcToken.mint(testAuthorizedUser,10e18);
+
         vm.prank(testBuyer);
         mockEbtcToken.mint(testBuyer, 10e18);
 
@@ -97,13 +106,13 @@ contract BSMTestBase is Test {
         authority.setRoleCapability(
             15,
             address(bsmTester),
-            bsmTester.setFeeToBuy.selector,
+            bsmTester.setFeeToBuyAsset.selector,
             true
         );
         authority.setRoleCapability(
             15,
             address(bsmTester),
-            bsmTester.setFeeToSell.selector,
+            bsmTester.setFeeToBuyEbtc.selector,
             true
         );
         authority.setRoleCapability(
@@ -122,6 +131,18 @@ contract BSMTestBase is Test {
             15,
             address(bsmTester),
             bsmTester.unpause.selector,
+            true
+        );
+        authority.setRoleCapability(
+            15,
+            address(bsmTester),
+            bsmTester.addAuthorizedUser.selector, 
+            true
+        );
+        authority.setRoleCapability(
+            15,
+            address(bsmTester),
+            bsmTester.removeAuthorizedUser.selector, 
             true
         );
         authority.setRoleCapability(
