@@ -2,6 +2,7 @@
 pragma solidity ^0.8.25;
 
 import "./BSMTestBase.sol";
+import {IEbtcBSM} from "../src/Dependencies/IEbtcBSM.sol";
 
 contract BuyAssetWithEbtcTests is BSMTestBase {
 
@@ -13,7 +14,6 @@ contract BuyAssetWithEbtcTests is BSMTestBase {
         assertEq(mockEbtcToken.balanceOf(testBuyer), 10e18);
 
         // TODO: test events
-
         vm.prank(testBuyer);
         assertEq(bsmTester.buyAssetWithEbtc(3e18), 3e18);
 

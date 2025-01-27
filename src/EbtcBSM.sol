@@ -5,11 +5,12 @@ import {AuthNoOwner} from "./Dependencies/AuthNoOwner.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IEbtcToken} from "./Dependencies/IEbtcToken.sol";
+import {IEbtcBSM} from "./Dependencies/IEbtcBSM.sol";
 import {IActivePool} from "./Dependencies/IActivePool.sol";
 import {IOracleModule} from "./Dependencies/IOracleModule.sol";
 import {IAssetVault, BaseAssetVault} from "./BaseAssetVault.sol";
 
-contract EbtcBSM is Pausable, AuthNoOwner {
+contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
     using SafeERC20 for IERC20;
 
     uint256 public constant BPS = 10000;
@@ -29,15 +30,6 @@ contract EbtcBSM is Pausable, AuthNoOwner {
     uint256 public totalMinted;
     mapping(address => bool) authorizedUsers;
     IAssetVault public assetVault;
-
-    event AssetVaultUpdated(address indexed oldVault, address indexed newVault);
-    event MintingCapUpdated(uint256 oldCap, uint256 newCap);
-    event FeeToBuyEbtcUpdated(uint256 oldFee, uint256 newFee);
-    event FeeToBuyAssetUpdated(uint256 oldFee, uint256 newFee);
-    event AssetSold(uint256 ebtcAmountOut, uint256 assetAmountIn, uint256 feeAmount);
-    event AssetBought(uint256 ebtcAmountIn, uint256 assetAmountOut, uint256 feeAmount);
-    event AuthorizedUserAdded(address indexed user);
-    event AuthorizedUserRemoved(address indexed user);
 
     error AboveMintingCap(
         uint256 amountToMint,
@@ -142,7 +134,7 @@ contract EbtcBSM is Pausable, AuthNoOwner {
 
         EBTC_TOKEN.mint(msg.sender, _ebtcAmountOut);
 
-        emit AssetSold(_ebtcAmountOut, _assetAmountIn, feeAmount);
+        emit BoughtEbtcWithAsset(_assetAmountIn, _ebtcAmountOut, feeAmount);
     }
 
     /**
@@ -173,7 +165,7 @@ contract EbtcBSM is Pausable, AuthNoOwner {
             _assetAmountOut
         );
 
-        emit AssetBought(_ebtcAmountIn, _assetAmountOut, feeAmount);
+        emit BoughtAssetWithEbtc(_ebtcAmountIn, _assetAmountOut, feeAmount);
     }
 
     function setFeeToBuyEbtc(uint256 _feeToBuyEbtcBPS) external requiresAuth {

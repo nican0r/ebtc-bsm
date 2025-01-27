@@ -8,7 +8,10 @@ contract BuyEbtcWithAssetTests is BSMTestBase {
         assertEq(mockAssetToken.balanceOf(testMinter), 10e18);
         assertEq(mockEbtcToken.balanceOf(testMinter), 0);
 
-        // TODO: test events
+        uint256 fee = 1e18 * bsmTester.feeToBuyAssetBPS() / (bsmTester.feeToBuyAssetBPS() + bsmTester.BPS());
+
+        vm.expectEmit();
+        emit IEbtcBSM.BoughtEbtcWithAsset(1e18, 1e18, fee);
 
         vm.prank(testMinter);
         assertEq(bsmTester.buyEbtcWithAsset(1e18), 1e18);
@@ -29,7 +32,9 @@ contract BuyEbtcWithAssetTests is BSMTestBase {
 
         assertEq(mockAssetToken.balanceOf(testMinter), 10e18);
 
-        // TODO: test events
+        vm.expectEmit();
+        emit IEbtcBSM.BoughtEbtcWithAsset(1.01e18, 1e18, 0.01e18);
+
         vm.prank(testMinter);
         assertEq(bsmTester.buyEbtcWithAsset(1.01e18), 1e18);
 
@@ -56,7 +61,9 @@ contract BuyEbtcWithAssetTests is BSMTestBase {
         vm.prank(techOpsMultisig);
         bsmTester.addAuthorizedUser(testAuthorizedUser);
 
-        // TODO: test events
+        vm.expectEmit();
+        emit IEbtcBSM.BoughtEbtcWithAsset(1.01e18, 1.01e18, 0);
+
         vm.prank(testAuthorizedUser);
         assertEq(bsmTester.buyEbtcWithAsset(1.01e18), 1.01e18);
     }

@@ -55,6 +55,7 @@ contract OracleModule is IOracleModule, AuthNoOwner {
     }
 
     function setMinPrice(uint256 _minPriceBPS) external requiresAuth {
+        require(_minPriceBPS <= BPS);
         emit MinPriceUpdated(minPriceBPS, _minPriceBPS);
         minPriceBPS = _minPriceBPS;
     }
