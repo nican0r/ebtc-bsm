@@ -13,19 +13,37 @@ import {BSMTestBase} from "../BSMTestBase.sol";
 
 abstract contract Setup is BaseSetup, BSMTestBase, ActorManager, AssetManager {
 
+    address second_actor = address(0x411c3);
+
     function setup() internal virtual override {
         BSMTestBase.setUp();
 
         // New Actor, beside address(this)
-        _addActor(address(0x411c3));
-        _newAsset(18); // New 18 decimals token // TODO: ADD ASSETS TO MANAGER
+        _addActor(second_actor);
+
+        // Add deployed assets to manager
+        _addAsset(address(mockEbtcToken));
+        _addAsset(address(mockAssetToken));
 
         // TODO: Standardize Mint and allowances to all actors
+        mockAssetToken.mint(second_actor, type(uint88).max);
+        mockEbtcToken.mint(second_actor, type(uint88).max);
+
+        vm.prank(second_actor);
+        mockAssetToken.approve(address(bsmTester), type(uint256).max);
+        vm.prank(second_actor);
+        mockEbtcToken.approve(address(bsmTester), type(uint256).max);
+
+
+        mockAssetToken.mint(address(this), type(uint88).max);
+        mockEbtcToken.mint(address(this), type(uint88).max);
+        mockAssetToken.approve(address(bsmTester), type(uint256).max);
+        mockEbtcToken.approve(address(bsmTester), type(uint256).max);
     }
 
     // NOTE: LIMITATION You can use these modifier only for one call, so use them for BASIC TARGETS
     modifier asAdmin {
-        vm.prank(address(this));
+        vm.prank(address(defaultGovernance));
         _;
     }
 
