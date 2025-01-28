@@ -12,7 +12,6 @@ import {AssetManager} from "./managers/AssetManager.sol";
 import {BSMTestBase} from "../BSMTestBase.sol";
 
 abstract contract Setup is BaseSetup, BSMTestBase, ActorManager, AssetManager {
-
     address second_actor = address(0x411c3);
 
     function setup() internal virtual override {
@@ -34,7 +33,6 @@ abstract contract Setup is BaseSetup, BSMTestBase, ActorManager, AssetManager {
         vm.prank(second_actor);
         mockEbtcToken.approve(address(bsmTester), type(uint256).max);
 
-
         mockAssetToken.mint(address(this), type(uint88).max);
         mockEbtcToken.mint(address(this), type(uint88).max);
         mockAssetToken.approve(address(bsmTester), type(uint256).max);
@@ -42,16 +40,17 @@ abstract contract Setup is BaseSetup, BSMTestBase, ActorManager, AssetManager {
     }
 
     // NOTE: LIMITATION You can use these modifier only for one call, so use them for BASIC TARGETS
-    modifier asAdmin {
+    modifier asAdmin() {
         vm.prank(address(defaultGovernance));
         _;
     }
-    modifier asTechops {
+
+    modifier asTechops() {
         vm.prank(address(techOpsMultisig));
         _;
     }
 
-    modifier asActor {
+    modifier asActor() {
         vm.prank(_getActor());
         _;
     }

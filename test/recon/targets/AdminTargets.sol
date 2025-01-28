@@ -6,10 +6,7 @@ import {BeforeAfter} from "../BeforeAfter.sol";
 import {Properties} from "../Properties.sol";
 import {vm} from "@chimera/Hevm.sol";
 
-abstract contract AdminTargets is
-    BaseTargetFunctions,
-    Properties
-{
+abstract contract AdminTargets is BaseTargetFunctions, Properties {
     function assetVault_setLiquidityBuffer(uint256 _liquidityBuffer) public updateGhosts asTechops {
         assetVault.setLiquidityBuffer(_liquidityBuffer);
     }
@@ -21,7 +18,6 @@ abstract contract AdminTargets is
     function bsmTester_addAuthorizedUser(address _user) public updateGhosts asTechops {
         bsmTester.addAuthorizedUser(_user);
     }
-
 
     function bsmTester_pause() public updateGhosts asTechops {
         bsmTester.pause();
@@ -50,5 +46,4 @@ abstract contract AdminTargets is
     function bsmTester_updateAssetVault(address newVault) public updateGhosts asTechops {
         bsmTester.updateAssetVault(newVault);
     }
-
 }

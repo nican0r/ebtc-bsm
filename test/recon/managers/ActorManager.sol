@@ -39,14 +39,14 @@ abstract contract ActorManager {
 
     // use this function to get the current active actor
     function _getActor() internal view returns (address) {
-       return _actor;
+        return _actor;
     }
 
     // returns an actor different from the currently set one
     function _getDifferentActor() internal view returns (address differentActor) {
         address[] memory actors_ = _getActors();
-        for(uint256 i; i < actors_.length; i++) {
-            if(actors_[i] != _actor) {
+        for (uint256 i; i < actors_.length; i++) {
+            if (actors_[i] != _actor) {
                 differentActor = actors_[i];
             }
         }
