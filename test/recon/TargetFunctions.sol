@@ -14,11 +14,11 @@ abstract contract TargetFunctions is
     ManagersTargets
 {
 
-    function bsmTester_buyAssetWithEbtc(uint256 _ebtcAmountIn) public {
+    function bsmTester_buyAssetWithEbtc(uint256 _ebtcAmountIn) public updateGhosts {
         bsmTester.buyAssetWithEbtc(_ebtcAmountIn);
     }
 
-    function bsmTester_buyEbtcWithAsset(uint256 _assetAmountIn) public {
+    function bsmTester_buyEbtcWithAsset(uint256 _assetAmountIn) public updateGhosts {
         bsmTester.buyEbtcWithAsset(_assetAmountIn);
     }
 
