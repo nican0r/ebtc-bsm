@@ -11,7 +11,7 @@ abstract contract InlinedTests is BaseTargetFunctions, Properties {
         gte(assetVault.totalBalance(), assetVault.depositAmount(), "accounting is sound");
     }
 
-    function doomsday_withdrawProfit_never_reverts() public updateGhosts asTechops {
+    function doomsday_withdrawProfit_never_reverts() public stateless asTechops {
         try assetVault.withdrawProfit() {
             /// @audit prob missing the loss on withdrwa, which is something that can happen
         } catch {

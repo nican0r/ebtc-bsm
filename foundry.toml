@@ -9,3 +9,5 @@ remappings = [
     "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
     "@chimera/=lib/chimera/src/"
 ]
+
+optimizer=false
