@@ -46,6 +46,10 @@ abstract contract Setup is BaseSetup, BSMTestBase, ActorManager, AssetManager {
         vm.prank(address(defaultGovernance));
         _;
     }
+    modifier asTechops {
+        vm.prank(address(techOpsMultisig));
+        _;
+    }
 
     modifier asActor {
         vm.prank(_getActor());
