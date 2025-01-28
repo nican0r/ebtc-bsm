@@ -13,5 +13,14 @@ abstract contract TargetFunctions is
     AdminTargets,
     ManagersTargets
 {
+
+    function bsmTester_buyAssetWithEbtc(uint256 _ebtcAmountIn) public {
+        bsmTester.buyAssetWithEbtc(_ebtcAmountIn);
+    }
+
+    function bsmTester_buyEbtcWithAsset(uint256 _assetAmountIn) public {
+        bsmTester.buyEbtcWithAsset(_assetAmountIn);
+    }
+
    
 }
