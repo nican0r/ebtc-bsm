@@ -21,19 +21,4 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
         assetVault_setLiquidityBuffer(1);
         assetVault_withdrawProfit();
     }
-
-    // forge test --match-test test_assetVault_withdrawProfit_never_reverts_0 -vvv 
-function test_assetVault_withdrawProfit_never_reverts_0() public {
-
-    bsmTester_buyEbtcWithAsset(1);
-
-    switch_asset(1);
-
-    asset_mint(0xc7183455a4C133Ae270771860664b6B7ec320bB1,1);
-
-    assetVault_setLiquidityBuffer(0);
-
-    assetVault_withdrawProfit_never_reverts();
-
- }
 }
