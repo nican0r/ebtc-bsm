@@ -11,7 +11,10 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
         setup();
     }
 
+    // forge test --match-test test_crytic -vv
     function test_crytic() public {
         // TODO: add failing property tests here for debugging
+        bsmTester_buyEbtcWithAsset(100);
+        bsmTester_buyAssetWithEbtc(80);
     }
 }
