@@ -144,7 +144,13 @@ contract BSMTestBase is Test {
         authority.setRoleCapability(
             15,
             address(assetVault),
-            assetVault.setLiquidityBuffer.selector,
+            assetVault.depositToExternalVault.selector,
+            true
+        );
+        authority.setRoleCapability(
+            15,
+            address(assetVault),
+            assetVault.redeemFromExternalVault.selector,
             true
         );
         authority.setRoleCapability(

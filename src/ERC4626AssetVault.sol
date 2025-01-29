@@ -2,18 +2,18 @@
 pragma solidity ^0.8.25;
 
 import {BaseAssetVault} from "./BaseAssetVault.sol";
+import {IERC4626AssetVault} from "./Dependencies/IERC4626AssetVault.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract ERC4626AssetVault is BaseAssetVault {
+contract ERC4626AssetVault is BaseAssetVault, IERC4626AssetVault {
     using SafeERC20 for IERC20;
 
     uint256 public constant BPS = 10000;
     IERC4626 public immutable EXTERNAL_VAULT;
 
-    uint256 public liquidityBuffer;
-
-    event LiquidityBufferUpdated(uint256 oldBuffer, uint256 newBuffer);
+    error TooFewSharesReceived(uint256 expectedShares, uint256 actualShares);
+    error TooFewAssetsReceived(uint256 expectedAssets, uint256 actualAssets);
 
     constructor(
         address _externalVault,
@@ -23,47 +23,29 @@ contract ERC4626AssetVault is BaseAssetVault {
         address _feeRecipient
     ) BaseAssetVault(_assetToken, _bsm, _governance, _feeRecipient) {
         EXTERNAL_VAULT = IERC4626(_externalVault);
-
-        // 100% buffer = no external lending
-        liquidityBuffer = BPS;
-    }
-
-    function _afterDeposit(
-        uint256 assetAmount,
-        uint256 feeAmount
-    ) internal override {
-        // get updated depositAmount (assetAmount added)
-        super._afterDeposit(assetAmount, feeAmount);
-
-        _rebalance(0);
     }
 
     function _beforeWithdraw(
         uint256 assetAmount,
         uint256 feeAmount
     ) internal override {
-        // get updated depositAmount (assetAmount removed)
-        super._beforeWithdraw(assetAmount, feeAmount);
+        _ensureLiquidity(assetAmount);
 
-        // include assetAmount in liquid buffer for BSM withdraw request
-        _rebalance(assetAmount - feeAmount);
+        super._beforeWithdraw(assetAmount, feeAmount);
     }
 
-    function _rebalance(uint256 additionalAmountRequired) internal override {
-        uint256 liquidBufferAmount = depositAmount * liquidityBuffer / BPS + additionalAmountRequired;
+    /// @notice Pull liquidity from the external lending vault if necessary
+    function _ensureLiquidity(uint256 amountRequired) private {
+        /// @dev super._totalBalance() returns asset balance for this contract
         uint256 liquidBalance = super._totalBalance();
 
-        if (liquidBalance > liquidBufferAmount) {
+        if (amountRequired > liquidBalance) {
+            uint256 deficit;
             unchecked {
-                uint256 depositAmount = liquidBalance - liquidBufferAmount;
-                ASSET_TOKEN.safeIncreaseAllowance(address(EXTERNAL_VAULT), depositAmount);
-                EXTERNAL_VAULT.deposit(depositAmount, address(this));
+                deficit = amountRequired - liquidBalance;
             }
-        } else if (liquidBalance < liquidBufferAmount) {
-            unchecked {
-                uint256 withdrawAmount = liquidBufferAmount - liquidBalance;
-                EXTERNAL_VAULT.withdraw(withdrawAmount, address(this), address(this));
-            }
+
+            EXTERNAL_VAULT.withdraw(deficit, address(this), address(this));
         }
     }
 
@@ -72,14 +54,29 @@ contract ERC4626AssetVault is BaseAssetVault {
         return EXTERNAL_VAULT.convertToAssets(EXTERNAL_VAULT.balanceOf(address(this))) + super._totalBalance();
     }
 
-    function setLiquidityBuffer(
-        uint256 _liquidityBuffer
-    ) external requiresAuth {
-        require(_liquidityBuffer <= BPS);
+    function _withdrawProfit(uint256 profitAmount) internal override {
+        _ensureLiquidity(profitAmount);
 
-        emit LiquidityBufferUpdated(liquidityBuffer, _liquidityBuffer);
-        liquidityBuffer = _liquidityBuffer;
+        super.withdrawProfit();
+    }
 
-        _rebalance(0);
+    /// @notice Redeem all shares
+    function _beforeMigration() internal override {
+        EXTERNAL_VAULT.redeem(EXTERNAL_VAULT.balanceOf(address(this)), address(this), address(this));
+    }
+
+    function depositToExternalVault(uint256 assetsToDeposit, uint256 expectedShares) external requiresAuth {
+        ASSET_TOKEN.safeIncreaseAllowance(address(EXTERNAL_VAULT), assetsToDeposit);
+        uint256 shares = EXTERNAL_VAULT.deposit(depositAmount, address(this));
+        if (shares < expectedShares) {
+            revert TooFewSharesReceived(expectedShares, shares);
+        }
+    }
+
+    function redeemFromExternalVault(uint256 sharesToRedeem, uint256 expectedAssets) external requiresAuth {
+        uint256 assets = EXTERNAL_VAULT.redeem(sharesToRedeem, address(this), address(this));
+        if (assets < expectedAssets) {
+            revert TooFewAssetsReceived(expectedAssets, assets);
+        }
     }
 }

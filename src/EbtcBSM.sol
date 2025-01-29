@@ -8,7 +8,8 @@ import {IEbtcToken} from "./Dependencies/IEbtcToken.sol";
 import {IEbtcBSM} from "./Dependencies/IEbtcBSM.sol";
 import {IActivePool} from "./Dependencies/IActivePool.sol";
 import {IOracleModule} from "./Dependencies/IOracleModule.sol";
-import {IAssetVault, BaseAssetVault} from "./BaseAssetVault.sol";
+import {IAssetVault} from "./Dependencies/IAssetVault.sol";
+import {BaseAssetVault} from "./BaseAssetVault.sol";
 
 contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
     using SafeERC20 for IERC20;
@@ -197,12 +198,13 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
     }
 
     function updateAssetVault(address newVault) external requiresAuth {
-        // only migrate user balance, accumulated fees will be claimed separately
-        uint256 bal = assetVault.depositAmount();
-        if (bal > 0) {
-            assetVault.beforeWithdraw(bal, 0);
-            ASSET_TOKEN.safeTransferFrom(address(assetVault), newVault, bal);
-            IAssetVault(newVault).afterDeposit(bal, 0);
+        require(newVault != address(0));
+
+        uint256 totalBalance = assetVault.totalBalance();
+        uint256 depositAmount = assetVault.depositAmount();
+        if (totalBalance > 0) {
+            assetVault.migrateTo(newVault);
+            assetVault.setDepositAmount(depositAmount);
         }
 
         emit AssetVaultUpdated(address(assetVault), newVault);
