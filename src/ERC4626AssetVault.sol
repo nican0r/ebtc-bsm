@@ -57,7 +57,7 @@ contract ERC4626AssetVault is BaseAssetVault {
             unchecked {
                 uint256 depositAmount = liquidBalance - liquidBufferAmount;
                 ASSET_TOKEN.safeIncreaseAllowance(address(EXTERNAL_VAULT), depositAmount);
-                EXTERNAL_VAULT.deposit(depositAmount, address(this));     
+                EXTERNAL_VAULT.deposit(depositAmount, address(this));
             }
         } else if (liquidBalance < liquidBufferAmount) {
             unchecked {
@@ -68,6 +68,7 @@ contract ERC4626AssetVault is BaseAssetVault {
     }
 
     function _totalBalance() internal override view returns (uint256) {
+        /// @dev convertToAssets is the same as previewRedeem for OZ, Aave, Euler, Morpho
         return EXTERNAL_VAULT.convertToAssets(EXTERNAL_VAULT.balanceOf(address(this))) + super._totalBalance();
     }
 

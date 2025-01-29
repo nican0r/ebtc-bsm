@@ -6,9 +6,7 @@ import "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import "@openzeppelin/contracts/mocks/token/ERC4626Mock.sol";
 import {MockAssetOracle} from "./mocks/MockAssetOracle.sol";
 import {MockActivePool} from "./mocks/MockActivePool.sol";
-import {MockPriceFeed} from "./mocks/MockPriceFeed.sol";
 import "../src/Dependencies/Governor.sol";
-import "../src/Dependencies/IPriceFeed.sol";
 import "../src/EbtcBSM.sol";
 import "../src/OracleModule.sol";
 import "../src/ERC4626AssetVault.sol";
@@ -19,11 +17,8 @@ contract BSMTestBase is Test {
     ERC4626Mock internal externalVault;
     ERC4626AssetVault internal assetVault;
     MockAssetOracle internal mockAssetOracle;
-    MockAssetOracle internal mockEbtcOracle;
     MockActivePool internal mockActivePool;
-    MockPriceFeed internal mockPriceFeed;
     OracleModule internal oracleModule;
-    IPriceFeed internal priceFeed;
     EbtcBSM internal bsmTester;
     address internal testMinter;
     address internal testBuyer;
@@ -42,11 +37,8 @@ contract BSMTestBase is Test {
         mockActivePool = new MockActivePool(mockEbtcToken);
         externalVault = new ERC4626Mock(address(mockAssetToken));
         mockAssetOracle = new MockAssetOracle(18);
-        mockEbtcOracle = new MockAssetOracle(18);
-        mockPriceFeed = new MockPriceFeed(mockEbtcOracle);
         oracleModule = new OracleModule(
             address(mockAssetOracle),
-            address(mockPriceFeed),
             address(authority)
         );
         testMinter = vm.addr(0x11111);
@@ -65,9 +57,7 @@ contract BSMTestBase is Test {
 
         // create initial ebtc supply
         mockEbtcToken.mint(defaultGovernance, 50e18);
-        mockEbtcOracle.setPrice(35648039480226817);
-        mockEbtcOracle.setUpdateTime(block.timestamp);
-        mockAssetOracle.setPrice(mockEbtcOracle.getPrice());
+        mockAssetOracle.setPrice(1e18);
         mockAssetOracle.setUpdateTime(block.timestamp);
 
         assetVault = new ERC4626AssetVault(
