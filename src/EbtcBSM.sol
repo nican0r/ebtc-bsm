@@ -197,14 +197,21 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
         emit AuthorizedUserRemoved(_user);
     }
 
+    /// @notice Updates the asset vault address and initiates a vault migration
+    /// @param newVault new asset vault address
     function updateAssetVault(address newVault) external requiresAuth {
         require(newVault != address(0));
 
         uint256 totalBalance = assetVault.totalBalance();
-        uint256 depositAmount = assetVault.depositAmount();
         if (totalBalance > 0) {
+            /// @dev cache deposit amount (will be set to 0 aftr migrateTo())
+            uint256 depositAmount = assetVault.depositAmount();
+
+            /// @dev transfer liquidity to new vault
             assetVault.migrateTo(newVault);
-            assetVault.setDepositAmount(depositAmount);
+
+            /// @dev set depositAmount on the new vault (fee amount should be 0 here)
+            IAssetVault(newVault).setDepositAmount(depositAmount);
         }
 
         emit AssetVaultUpdated(address(assetVault), newVault);
