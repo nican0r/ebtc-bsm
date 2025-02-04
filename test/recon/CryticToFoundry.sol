@@ -10,59 +10,34 @@ import "forge-std/console2.sol";
 contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
     function setUp() public override {
         setup();
+
+        vm.label(address(mockAssetToken), "mockAssetToken");
+        vm.label(address(mockEbtcToken), "mockEbtcToken");
+        vm.label(address(second_actor), "second_actor");
+        vm.label(address(this), "actor");
+        vm.label(address(bsmTester), "bsmTester");
+        vm.label(address(techOpsMultisig), "techOpsMultisig");
+        vm.label(address(assetVault), "assetVault");
     }
 
     // forge test --match-test test_crytic -vvv
     function test_crytic() public {
-        // TODO: add failing property tests here for debugging
-        bsmTester_buyEbtcWithAsset(100);
-        bsmTester_buyAssetWithEbtc(80);
+        bsmTester_updateAssetVault();
+    } 
 
-        assetVault_setLiquidityBuffer(1);
-        assetVault_withdrawProfit();
-    }
+    // forge test --match-test test_doomsday_withdrawProfit_never_reverts_1 -vvv 
+function test_doomsday_withdrawProfit_never_reverts_1() public {
 
-    // forge test --match-test test_example_loss -vvv
-    function test_example_loss() public {
-        externalVault.deposit(1, address(this));
-    }
+    add_new_asset(3);
 
-    // forge test --match-test test_property_accounting_is_sound_0 -vvv
-    function test_property_accounting_is_sound_0() public {
-        bsmTester_buyEbtcWithAsset(1);
+    bsmTester_addAuthorizedUser(0x0000000000000000000000000000000000000000);
 
-        switch_asset(966415373052439958843432959234195543);
+    switch_asset(10000000000000000000);
 
-        asset_mint(0xc7183455a4C133Ae270771860664b6B7ec320bB1, 900744976127165460329601);
+    asset_mint(0x03A6a84cD762D9707A21605b548aaaB891562aAb,3);
 
-        assetVault_setLiquidityBuffer(0);
+    doomsday_withdrawProfit_never_reverts();
 
-        property_accounting_is_sound();
-    }
+ }
 
-    // forge test --match-test test_doomsday_withdrawProfit_never_reverts_1 -vvv
-    function test_doomsday_withdrawProfit_never_reverts_1() public {
-        bsmTester_buyEbtcWithAsset(1);
-
-        switch_asset(58038907321649131);
-
-        assetVault_setLiquidityBuffer(0);
-
-        asset_mint(0xc7183455a4C133Ae270771860664b6B7ec320bB1, 126561686389134552);
-
-        doomsday_withdrawProfit_never_reverts();
-    }
-
-    // forge test --match-test test_check_set_liquidity_buffer_max_2 -vvv
-    function test_check_set_liquidity_buffer_max_2() public {
-        bsmTester_buyEbtcWithAsset(1);
-
-        switch_asset(1);
-
-        asset_mint(0xc7183455a4C133Ae270771860664b6B7ec320bB1, 8313324464767570061);
-
-        assetVault_setLiquidityBuffer(0);
-
-        check_set_liquidity_buffer_max();
-    }
 }

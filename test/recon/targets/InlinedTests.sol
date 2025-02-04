@@ -7,9 +7,12 @@ import {Properties} from "../Properties.sol";
 import {vm} from "@chimera/Hevm.sol";
 
 abstract contract InlinedTests is BaseTargetFunctions, Properties {
-    function property_accounting_is_sound() public {
-        gte(assetVault.totalBalance(), assetVault.depositAmount(), "accounting is sound");
+    modifier stateless() {
+        _;
+        revert("stateless");
     }
+
+
 
     function doomsday_withdrawProfit_never_reverts() public stateless asTechops {
         try assetVault.withdrawProfit() {
@@ -19,32 +22,8 @@ abstract contract InlinedTests is BaseTargetFunctions, Properties {
         }
     }
 
-    modifier stateless() {
-        _;
-        revert("stateless");
-    }
 
-    function check_set_liquidity_buffer_max() public stateless asTechops {
-        try assetVault.setLiquidityBuffer(10_000) {
-            /// @audit prob missing the loss on withdrwa, which is something that can happen
-        } catch {
-            t(false, "check_set_liquidity_buffer_max");
-        }
 
-        // Token balance of assetVault >= depositAmount since they must have withdrawn 100%
-        gte(mockAssetToken.balanceOf(address(assetVault)), assetVault.depositAmount(), "All in the assetvault");
-    }
-
-    function check_set_liquidity_buffer_zero() public stateless asTechops {
-        try assetVault.setLiquidityBuffer(0) {
-            /// @audit prob missing the loss on withdrwa, which is something that can happen
-        } catch {
-            t(false, "check_set_liquidity_buffer_zero");
-        }
-
-        // Token balance of assetVault == 0 since we invest 100%
-        eq(mockAssetToken.balanceOf(address(assetVault)), 0, "All invested");
-    }
 
     // // TODO: Something about fee and migration
     // function doomsday_updateAssetVault(address newVault) public stateless asTechops {
@@ -56,4 +35,22 @@ abstract contract InlinedTests is BaseTargetFunctions, Properties {
     //     }
 
     // }
+
+
+    // == BASIC STUFF == //
+    function assetVault_afterDeposit(uint256 assetAmount, uint256 feeAmount) public stateless asActor {
+        assetVault.afterDeposit(assetAmount, feeAmount);
+        t(false, "always fail");
+    }
+
+    function assetVault_beforeWithdraw(uint256 assetAmount, uint256 feeAmount) public stateless asActor {
+        assetVault.beforeWithdraw(assetAmount, feeAmount);
+        t(false, "always fail");
+    }
+        // TODO: Revert always
+    function assetVault_migrateTo(address newVault) public stateless asActor {
+        assetVault.migrateTo(newVault);
+        t(false, "always fail");
+    }
+
 }

@@ -57,7 +57,7 @@ contract ERC4626AssetVault is BaseAssetVault, IERC4626AssetVault {
     function _withdrawProfit(uint256 profitAmount) internal override {
         _ensureLiquidity(profitAmount);
 
-        super.withdrawProfit();
+        super._withdrawProfit(profitAmount);
     }
 
     /// @notice Redeem all shares

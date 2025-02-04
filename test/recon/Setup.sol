@@ -23,6 +23,7 @@ abstract contract Setup is BaseSetup, BSMTestBase, ActorManager, AssetManager {
         // Add deployed assets to manager
         _addAsset(address(mockEbtcToken));
         _addAsset(address(mockAssetToken));
+        _enableAsset(address(mockEbtcToken));
 
         // TODO: Standardize Mint and allowances to all actors
         mockAssetToken.mint(second_actor, type(uint88).max);

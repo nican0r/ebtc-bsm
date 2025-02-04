@@ -68,7 +68,7 @@ contract BaseAssetVault is AuthNoOwner, IAssetVault {
     /// @notice Allows the BSM to migrate liquidity to a new vault
     function migrateTo(address newVault) external onlyBSM {
         /// @dev take profit first (totalBalance == depositAmount after)
-        withdrawProfit();
+        _doWithdrawProfit();
 
         /// @dev clear depositAmount in old vault (address(this))
         depositAmount = 0;
@@ -90,6 +90,10 @@ contract BaseAssetVault is AuthNoOwner, IAssetVault {
     }
 
     function withdrawProfit() public requiresAuth {
+        _doWithdrawProfit();
+    }
+
+    function _doWithdrawProfit() internal {
         uint256 profit = feeProfit();
         if (profit > 0) {
             _withdrawProfit(profit);
