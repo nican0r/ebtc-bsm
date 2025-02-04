@@ -91,13 +91,25 @@ contract BuyEbtcWithAssetTests is BSMTestBase {
         vm.prank(testMinter);
         oracleModule.setMinPrice(9000);
 
-        // set min price to 90%
+        // set min price to 90% (0.9 min price)
         vm.prank(techOpsMultisig);
         oracleModule.setMinPrice(9000);
 
-        mockAssetOracle.setPrice(int(uint256(mockEbtcOracle.getPrice()) * 8999 / oracleModule.BPS()));
+        // Drop price to 0.89
+        mockAssetOracle.setPrice(0.89e18);
 
         vm.expectRevert(abi.encodeWithSelector(EbtcBSM.BadOracleRate.selector));
+        vm.prank(testMinter);
+        bsmTester.buyEbtcWithAsset(1e18);
+    }
+
+    function testBuyEbtcOracleTooOld() public {
+
+        uint256 nowTime = block.timestamp;
+
+        vm.warp(block.timestamp + oracleModule.oracleFreshnessSeconds() + 1);
+
+        vm.expectRevert(abi.encodeWithSelector(OracleModule.StaleOraclePrice.selector, nowTime));
         vm.prank(testMinter);
         bsmTester.buyEbtcWithAsset(1e18);
     }

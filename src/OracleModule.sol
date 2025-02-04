@@ -2,14 +2,13 @@
 pragma solidity ^0.8.25;
 
 import {AuthNoOwner} from "./Dependencies/AuthNoOwner.sol";
-import {IPriceFeed} from "./Dependencies/IPriceFeed.sol";
 import {IOracleModule} from "./Dependencies/IOracleModule.sol";
 import {AggregatorV3Interface} from "./Dependencies/AggregatorV3Interface.sol";
 
 contract OracleModule is IOracleModule, AuthNoOwner {
     uint256 public constant BPS = 10000;
 
-    IPriceFeed public immutable PRICE_FEED;
+    /// @notice Asset feed is denominated in BTC (i.e. tBTC/BTC)
     AggregatorV3Interface public immutable ASSET_FEED;
     uint256 public immutable ASSET_FEED_PRECISION;
 
@@ -25,10 +24,9 @@ contract OracleModule is IOracleModule, AuthNoOwner {
     error BadOraclePrice(int256 price);
     error StaleOraclePrice(uint256 updatedAt);
 
-    constructor(address _assetFeed, address _ebtcFeed, address _governance) {
+    constructor(address _assetFeed, address _governance) {
         ASSET_FEED = AggregatorV3Interface(_assetFeed);
         ASSET_FEED_PRECISION = 10 ** ASSET_FEED.decimals();
-        PRICE_FEED = IPriceFeed(_ebtcFeed);
         _initializeAuthority(_governance);
         minPriceBPS = BPS;
         oracleFreshnessSeconds = 1 days;
@@ -46,12 +44,12 @@ contract OracleModule is IOracleModule, AuthNoOwner {
         return (uint256(answer) * 1e18) / ASSET_FEED_PRECISION;
     }
 
-    function _minAcceptablePrice() private returns (uint256) {
-        return (PRICE_FEED.fetchPrice() * minPriceBPS) / BPS;
-    }
-
     function canMint() external returns (bool) {
-        return _getAssetPrice() >= _minAcceptablePrice();
+        uint256 assetPrice = _getAssetPrice();
+        /// @dev peg price is 1e18
+        uint256 minAcceptablePrice = 1e18 * minPriceBPS / BPS;
+
+        return minAcceptablePrice <= assetPrice;
     }
 
     function setMinPrice(uint256 _minPriceBPS) external requiresAuth {

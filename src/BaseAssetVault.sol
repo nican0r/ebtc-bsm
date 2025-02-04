@@ -2,17 +2,10 @@
 pragma solidity ^0.8.25;
 
 import { AuthNoOwner } from "./Dependencies/AuthNoOwner.sol";
+import { IAssetVault } from "./Dependencies/IAssetVault.sol";
 import { SafeERC20, IERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-interface IAssetVault {
-    function depositAmount() external view returns (uint256);
-    function totalBalance() external view returns (uint256);
-    function afterDeposit(uint256 assetAmount, uint256 feeAmount) external;
-    function beforeWithdraw(uint256 assetAmount, uint256 feeAmount) external;
-    function withdrawProfit() external;
-}
-
-contract BaseAssetVault is AuthNoOwner {
+contract BaseAssetVault is AuthNoOwner, IAssetVault {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable ASSET_TOKEN;
@@ -52,8 +45,12 @@ contract BaseAssetVault is AuthNoOwner {
         depositAmount -= assetAmount;
     }
 
-    function _rebalance(uint256 additionalAmountRequired) internal virtual {
-        // do nothing
+    function _withdrawProfit(uint256 profitAmount) internal virtual {
+        ASSET_TOKEN.safeTransfer(FEE_RECIPIENT, profitAmount);
+    }
+
+    function _beforeMigration() internal virtual {
+        // Do nothing
     }
 
     function totalBalance() external view returns (uint256) {
@@ -68,15 +65,34 @@ contract BaseAssetVault is AuthNoOwner {
         _beforeWithdraw(assetAmount, feeAmount);
     }
 
+    /// @notice Allows the BSM to migrate liquidity to a new vault
+    function migrateTo(address newVault) external onlyBSM {
+        /// @dev take profit first (totalBalance == depositAmount after)
+        withdrawProfit();
+
+        /// @dev clear depositAmount in old vault (address(this))
+        depositAmount = 0;
+
+        /// @dev perform pre-migration tasks (potentially used by derived contracts)
+        _beforeMigration();
+
+        /// @dev transfer all liquidity to new vault
+        ASSET_TOKEN.safeTransfer(newVault, ASSET_TOKEN.balanceOf(address(this)));
+    }
+
+    /// @notice Allows the BSM to set the deposit amount after a vault migration
+    function setDepositAmount(uint256 amount) external onlyBSM {
+        depositAmount = amount;
+    }
+
     function feeProfit() public view returns (uint256) {
         return _totalBalance() - depositAmount;
     }
 
-    function withdrawProfit() external requiresAuth {
+    function withdrawProfit() public requiresAuth {
         uint256 profit = feeProfit();
         if (profit > 0) {
-            _rebalance(profit);
-            ASSET_TOKEN.safeTransfer(FEE_RECIPIENT, profit);
+            _withdrawProfit(profit);
             // INVARIANT: total balance must be >= deposit amount
             require(_totalBalance() >= depositAmount);
         }

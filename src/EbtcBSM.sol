@@ -8,7 +8,8 @@ import {IEbtcToken} from "./Dependencies/IEbtcToken.sol";
 import {IEbtcBSM} from "./Dependencies/IEbtcBSM.sol";
 import {IActivePool} from "./Dependencies/IActivePool.sol";
 import {IOracleModule} from "./Dependencies/IOracleModule.sol";
-import {IAssetVault, BaseAssetVault} from "./BaseAssetVault.sol";
+import {IAssetVault} from "./Dependencies/IAssetVault.sol";
+import {BaseAssetVault} from "./BaseAssetVault.sol";
 
 contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
     using SafeERC20 for IERC20;
@@ -196,13 +197,21 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
         emit AuthorizedUserRemoved(_user);
     }
 
+    /// @notice Updates the asset vault address and initiates a vault migration
+    /// @param newVault new asset vault address
     function updateAssetVault(address newVault) external requiresAuth {
-        // only migrate user balance, accumulated fees will be claimed separately
-        uint256 bal = assetVault.depositAmount();
-        if (bal > 0) {
-            assetVault.beforeWithdraw(bal, 0);
-            ASSET_TOKEN.safeTransferFrom(address(assetVault), newVault, bal);
-            IAssetVault(newVault).afterDeposit(bal, 0);
+        require(newVault != address(0));
+
+        uint256 totalBalance = assetVault.totalBalance();
+        if (totalBalance > 0) {
+            /// @dev cache deposit amount (will be set to 0 aftr migrateTo())
+            uint256 depositAmount = assetVault.depositAmount();
+
+            /// @dev transfer liquidity to new vault
+            assetVault.migrateTo(newVault);
+
+            /// @dev set depositAmount on the new vault (fee amount should be 0 here)
+            IAssetVault(newVault).setDepositAmount(depositAmount);
         }
 
         emit AssetVaultUpdated(address(assetVault), newVault);
