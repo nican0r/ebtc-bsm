@@ -45,7 +45,11 @@ contract ERC4626AssetVault is BaseAssetVault, IERC4626AssetVault {
                 deficit = amountRequired - liquidBalance;
             }
 
-            EXTERNAL_VAULT.withdraw(deficit, address(this), address(this));
+            // using convertToShares here because it rounds down
+            // this prevents the vault from taking on losses
+            uint256 shares = EXTERNAL_VAULT.convertToShares(deficit);
+
+            EXTERNAL_VAULT.redeem(shares, address(this), address(this));
         }
     }
 
