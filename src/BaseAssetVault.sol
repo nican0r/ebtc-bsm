@@ -98,7 +98,7 @@ contract BaseAssetVault is AuthNoOwner, IAssetVault {
         if (profit > 0) {
             _withdrawProfit(profit);
             // INVARIANT: total balance must be >= deposit amount
-            require(_totalBalance() >= depositAmount);
+            require(_totalBalance() >= depositAmount, "Insolvency check");
         }
     }
 }
