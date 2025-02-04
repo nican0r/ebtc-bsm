@@ -42,8 +42,9 @@ contract BaseAssetVault is AuthNoOwner, IAssetVault {
         depositAmount += assetAmount;
     }
 
-    function _beforeWithdraw(uint256 assetAmount, uint256 feeAmount) internal virtual {
+    function _beforeWithdraw(uint256 assetAmount, uint256 feeAmount) internal virtual returns (uint256) {
         depositAmount -= assetAmount;
+        return assetAmount;
     }
 
     function _withdrawProfit(uint256 profitAmount) internal virtual {
@@ -62,8 +63,8 @@ contract BaseAssetVault is AuthNoOwner, IAssetVault {
         _afterDeposit(assetAmount, feeAmount);
     }
 
-    function beforeWithdraw(uint256 assetAmount, uint256 feeAmount) external onlyBSM {
-        _beforeWithdraw(assetAmount, feeAmount);
+    function beforeWithdraw(uint256 assetAmount, uint256 feeAmount) external onlyBSM returns (uint256) {
+        return _beforeWithdraw(assetAmount, feeAmount);
     }
 
     /// @notice Allows the BSM to migrate liquidity to a new vault

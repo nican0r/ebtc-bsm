@@ -5,7 +5,7 @@ interface IAssetVault {
     function depositAmount() external view returns (uint256);
     function totalBalance() external view returns (uint256);
     function afterDeposit(uint256 assetAmount, uint256 feeAmount) external;
-    function beforeWithdraw(uint256 assetAmount, uint256 feeAmount) external;
+    function beforeWithdraw(uint256 assetAmount, uint256 feeAmount) external returns (uint256);
     function withdrawProfit() external;
     function migrateTo(address newVault) external;
     function setDepositAmount(uint256 amount) external;

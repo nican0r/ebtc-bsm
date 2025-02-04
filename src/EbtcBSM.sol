@@ -147,8 +147,9 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
 
         totalMinted -= _ebtcAmountIn;
 
-        _assetAmountOut = _ebtcAmountIn - feeAmount;
-        assetVault.beforeWithdraw(_ebtcAmountIn, feeAmount);
+        uint256 redeemedAmount = assetVault.beforeWithdraw(_ebtcAmountIn, feeAmount);
+
+        _assetAmountOut = redeemedAmount - feeAmount;
         // INVARIANT: _assetAmountOut <= _ebtcAmountIn
         ASSET_TOKEN.safeTransferFrom(
             address(assetVault),
