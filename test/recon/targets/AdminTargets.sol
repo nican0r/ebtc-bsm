@@ -54,16 +54,8 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
     
 
     /// === BSM === ///
-    function bsmTester_addAuthorizedUser(address _user) public updateGhosts asTechops {
-        bsmTester.addAuthorizedUser(_user);
-    }
-
     function bsmTester_pause() public updateGhosts asTechops {
         bsmTester.pause();
-    }
-
-    function bsmTester_removeAuthorizedUser(address _user) public updateGhosts asTechops {
-        bsmTester.removeAuthorizedUser(_user);
     }
 
     function bsmTester_setFeeToBuyAsset(uint256 _feeToBuyAssetBPS) public updateGhosts asTechops {
