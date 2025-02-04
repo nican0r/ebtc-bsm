@@ -14,18 +14,6 @@ contract GovernanceTests is BSMTestBase {
         assetVault.withdrawProfit();
     }
 
-    function testAddAuthorizedUser() public {
-        vm.expectRevert("Auth: UNAUTHORIZED");
-        vm.prank(testMinter);
-        bsmTester.addAuthorizedUser(testBuyer);
-    }
-
-    function testRemoveAuthorizedUser() public {
-        vm.expectRevert("Auth: UNAUTHORIZED");
-        vm.prank(testMinter);
-        bsmTester.removeAuthorizedUser(testBuyer);
-    }
-
     function testSetBuyAssetFee() public {
         vm.expectRevert("Auth: UNAUTHORIZED");
         vm.prank(testMinter);

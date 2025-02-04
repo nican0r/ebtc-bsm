@@ -12,6 +12,7 @@ contract BaseAssetVault is AuthNoOwner, IAssetVault {
     address public immutable BSM;
     address public immutable FEE_RECIPIENT;
 
+    /// @notice total user deposit amount
     uint256 public depositAmount;
 
     error CallerNotBSM();

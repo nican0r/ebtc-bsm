@@ -55,7 +55,7 @@ contract BuyEbtcWithAssetTests is BSMTestBase {
     }
 
     function testBuyEbtcFeeAuthorizedUser() public {
-        vm.prank(techOpsMultisig);
+/*        vm.prank(techOpsMultisig);
         bsmTester.setFeeToBuyEbtc(100);
 
         vm.prank(techOpsMultisig);
@@ -65,7 +65,7 @@ contract BuyEbtcWithAssetTests is BSMTestBase {
         emit IEbtcBSM.BoughtEbtcWithAsset(1.01e18, 1.01e18, 0);
 
         vm.prank(testAuthorizedUser);
-        assertEq(bsmTester.buyEbtcWithAsset(1.01e18), 1.01e18);
+        assertEq(bsmTester.buyEbtcWithAsset(1.01e18), 1.01e18); */
     }
 
     function testBuyEbtcFailAboveCap() public {

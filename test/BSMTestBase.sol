@@ -125,18 +125,6 @@ contract BSMTestBase is Test {
         );
         authority.setRoleCapability(
             15,
-            address(bsmTester),
-            bsmTester.addAuthorizedUser.selector, 
-            true
-        );
-        authority.setRoleCapability(
-            15,
-            address(bsmTester),
-            bsmTester.removeAuthorizedUser.selector, 
-            true
-        );
-        authority.setRoleCapability(
-            15,
             address(assetVault),
             assetVault.withdrawProfit.selector,
             true

@@ -19,7 +19,7 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
 
     // Immutables
     IERC20 public immutable ASSET_TOKEN;
-    IOracleModule public immutable ORACLE_MODULE;
+    // TODO: make this configurable
     IEbtcToken public immutable EBTC_TOKEN;
     IActivePool public immutable ACTIVE_POOL;
     address public immutable FEE_RECIPIENT;
@@ -29,8 +29,8 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
     /// @notice minting cap % of ebtc total supply TWAP
     uint256 public mintingCapBPS;
     uint256 public totalMinted;
-    mapping(address => bool) authorizedUsers;
     IAssetVault public assetVault;
+    IOracleModule public oracleModule;
 
     error AboveMintingCap(
         uint256 amountToMint,
@@ -65,12 +65,13 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
         require(_governance != address(0));
 
         ASSET_TOKEN = IERC20(_assetToken);
-        ORACLE_MODULE = IOracleModule(_oracleModule);
+        oracleModule = IOracleModule(_oracleModule);
         EBTC_TOKEN = IEbtcToken(_ebtcToken);
         ACTIVE_POOL = IActivePool(_activePool);
         FEE_RECIPIENT = _feeRecipient;
         _initializeAuthority(_governance);
 
+        // potentially remove this
         assetVault = IAssetVault(
             address(
                 new BaseAssetVault(
@@ -83,7 +84,9 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
         );
     }
 
+    // Extract this into rate limiter
     function _checkMintingCap(uint256 _amountToMint) private {
+        /// @notice ACTIVE_POOL.observe returns the eBTC TWAP total supply
         uint256 totalEbtcSupply = ACTIVE_POOL.observe();
         uint256 maxMint = (totalEbtcSupply * mintingCapBPS) / BPS;
         uint256 newTotalToMint = totalMinted + _amountToMint;
@@ -94,29 +97,21 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
     }
 
     function _feeToBuyAsset(uint256 _amount) private view returns (uint256) {
-        if (authorizedUsers[msg.sender]) return 0;
         return (_amount * feeToBuyAssetBPS) / BPS;
     }
 
     function _feeToBuyEbtc(uint256 _amount) private view returns (uint256) {
-        if (authorizedUsers[msg.sender]) return 0;
         uint256 fee = feeToBuyEbtcBPS;
-        return _amount * fee / (fee + BPS);
+        return (_amount * fee) / (fee + BPS);
     }
 
-    /**
-     * @notice Allows users to mint eBTC by depositing asset tokens
-     * @dev This function assumes the exchange rate between the asset token and eBTC is 1:1
-     * 
-     * @param _assetAmountIn Amount of asset tokens to deposit
-     * @return _ebtcAmountOut Amount of eBTC tokens minted to the user
-     */
-    function buyEbtcWithAsset(uint256 _assetAmountIn) external whenNotPaused returns (uint256 _ebtcAmountOut) {
-        if (!ORACLE_MODULE.canMint()) {
+    function _buyEbtcWithAsset(
+        uint256 _assetAmountIn,
+        uint256 feeAmount
+    ) internal returns (uint256 _ebtcAmountOut) {
+        if (!oracleModule.canMint()) {
             revert BadOracleRate();
         }
-
-        uint256 feeAmount = _feeToBuyEbtc(_assetAmountIn);
 
         _ebtcAmountOut = _assetAmountIn - feeAmount;
 
@@ -138,14 +133,10 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
         emit BoughtEbtcWithAsset(_assetAmountIn, _ebtcAmountOut, feeAmount);
     }
 
-    /**
-     * @notice Allows users to buy BSM owned asset tokens by burning their eBTC
-     * @dev This function assumes the exchange rate between the asset token and eBTC is 1:1
-     * 
-     * @param _ebtcAmountIn Amount of eBTC tokens to burn
-     * @return _assetAmountOut Amount of asset tokens sent to user
-     */
-    function buyAssetWithEbtc(uint256 _ebtcAmountIn) external whenNotPaused returns (uint256 _assetAmountOut) {
+    function _buyAssetWithEbtc(
+        uint256 _ebtcAmountIn,
+        uint256 feeAmount
+    ) internal returns (uint256 _assetAmountOut) {
         // ebtc to asset price is treated as 1 for buyAsset
         uint256 depositAmount = assetVault.depositAmount();
         if (_ebtcAmountIn > depositAmount) {
@@ -156,7 +147,6 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
 
         totalMinted -= _ebtcAmountIn;
 
-        uint256 feeAmount = _feeToBuyAsset(_ebtcAmountIn);
         _assetAmountOut = _ebtcAmountIn - feeAmount;
         assetVault.beforeWithdraw(_ebtcAmountIn, feeAmount);
         // INVARIANT: _assetAmountOut <= _ebtcAmountIn
@@ -167,6 +157,44 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
         );
 
         emit BoughtAssetWithEbtc(_ebtcAmountIn, _assetAmountOut, feeAmount);
+    }
+
+    /**
+     * @notice Allows users to mint eBTC by depositing asset tokens
+     * @dev This function assumes the exchange rate between the asset token and eBTC is 1:1
+     *
+     * @param _assetAmountIn Amount of asset tokens to deposit
+     * @return _ebtcAmountOut Amount of eBTC tokens minted to the user
+     */
+    function buyEbtcWithAsset(
+        uint256 _assetAmountIn
+    ) external whenNotPaused returns (uint256 _ebtcAmountOut) {
+        return _buyEbtcWithAsset(_assetAmountIn, _feeToBuyEbtc(_assetAmountIn));
+    }
+
+    /**
+     * @notice Allows users to buy BSM owned asset tokens by burning their eBTC
+     * @dev This function assumes the exchange rate between the asset token and eBTC is 1:1
+     *
+     * @param _ebtcAmountIn Amount of eBTC tokens to burn
+     * @return _assetAmountOut Amount of asset tokens sent to user
+     */
+    function buyAssetWithEbtc(
+        uint256 _ebtcAmountIn
+    ) external whenNotPaused returns (uint256 _assetAmountOut) {
+        return _buyAssetWithEbtc(_ebtcAmountIn, _feeToBuyAsset(_ebtcAmountIn));
+    }
+
+    function buyEbtcWithAssetNoFee(
+        uint256 _assetAmountIn
+    ) external whenNotPaused requiresAuth returns (uint256 _ebtcAmountOut) {
+        return _buyEbtcWithAsset(_assetAmountIn, 0);
+    }
+
+    function buyAssetWithEbtcNoFee(
+        uint256 _ebtcAmountIn
+    ) external whenNotPaused requiresAuth returns (uint256 _assetAmountOut) {
+        return _buyAssetWithEbtc(_ebtcAmountIn, 0);
     }
 
     function setFeeToBuyEbtc(uint256 _feeToBuyEbtcBPS) external requiresAuth {
@@ -187,14 +215,10 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
         mintingCapBPS = _mintingCapBPS;
     }
 
-    function addAuthorizedUser(address _user) external requiresAuth {
-        authorizedUsers[_user] = true;
-        emit AuthorizedUserAdded(_user);
-    }
-
-    function removeAuthorizedUser(address _user) external requiresAuth {
-        delete authorizedUsers[_user];
-        emit AuthorizedUserRemoved(_user);
+    function setOracleModule(address _oracleModule) external requiresAuth {
+        require(_oracleModule != address(0));
+        emit OracleModuleUpdated(address(oracleModule), _oracleModule);
+        oracleModule = IOracleModule(_oracleModule);
     }
 
     /// @notice Updates the asset vault address and initiates a vault migration
