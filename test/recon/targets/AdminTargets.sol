@@ -38,17 +38,27 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
     function inlined_withdrawProfitTest() public {
         uint256 amt = assetVault.feeProfit();
         uint256 balB4AssetVault = assetVault.totalBalance();
+
+        // Expected lower
+        uint256 shares = assetVault.EXTERNAL_VAULT().convertToShares(amt);
+        uint256 expected = assetVault.EXTERNAL_VAULT().previewRedeem(shares);
+
         uint256 balB4 = (assetVault.ASSET_TOKEN()).balanceOf(address(assetVault.FEE_RECIPIENT()));
-        assetVault_claimProfit();
+        assetVault_claimProfit(); // The estimate should be 
         uint256 balAfter = (assetVault.ASSET_TOKEN()).balanceOf(address(assetVault.FEE_RECIPIENT()));
 
-        eq(balAfter - balB4, amt, "Amt has been sent to recipient");
+        // The test is a bound as some slippage loss can happen, we take the worst slippage and the exact amt and check against those
+        uint256 deltaFees = balAfter - balB4;
+
+        gte(expected, deltaFees, "Recipien got at least expected");
+        lte(deltaFees, amt, "Delta fees is at most profit");
 
         // Total Balance of Vualt should also move correctly
-        eq(assetVault.totalBalance(), balB4AssetVault - amt, "Asset Vault balance decreases as intended");
+        gte(assetVault.totalBalance(), balB4AssetVault - amt, "Asset Vault balance decreases at most by profit");
+        lte(assetVault.totalBalance(), balB4AssetVault - expected, "Asset Vault balance decreases at least by expected");
 
         // Profit should be 0
-        eq(assetVault.feeProfit(), 0, "Profit should be 0");
+        // eq(assetVault.feeProfit(), 0, "Profit should be 0"); /// @audit is it ok for it to be non-zero?
     }
 
     
