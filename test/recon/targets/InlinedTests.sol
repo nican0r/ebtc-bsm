@@ -14,11 +14,11 @@ abstract contract InlinedTests is BaseTargetFunctions, Properties {
 
 
 
-    function doomsday_withdrawProfit_never_reverts() public stateless asTechops {
-        try assetVault.withdrawProfit() {
+    function doomsday_claimProfit_never_reverts() public stateless asTechops {
+        try assetVault.claimProfit() {
             /// @audit prob missing the loss on withdrwa, which is something that can happen
         } catch {
-            t(false, "doomsday_withdrawProfit_never_reverts");
+            t(false, "doomsday_claimProfit_never_reverts");
         }
     }
 

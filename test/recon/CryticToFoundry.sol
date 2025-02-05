@@ -66,7 +66,7 @@ function test_doomsday_withdrawProfit_never_reverts_2() public {
 
     asset_mint(0xc7183455a4C133Ae270771860664b6B7ec320bB1,4);
 
-    doomsday_withdrawProfit_never_reverts();
+    doomsday_claimProfit_never_reverts();
 
  }
 }

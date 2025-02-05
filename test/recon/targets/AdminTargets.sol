@@ -31,15 +31,15 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
         assetVault.setDepositAmount(amount);
     }
 
-    function assetVault_withdrawProfit() public updateGhosts asTechops {
-        assetVault.withdrawProfit();
+    function assetVault_claimProfit() public updateGhosts asTechops {
+        assetVault.claimProfit();
     }
 
     function inlined_withdrawProfitTest() public {
         uint256 amt = assetVault.feeProfit();
         uint256 balB4AssetVault = assetVault.totalBalance();
         uint256 balB4 = (assetVault.ASSET_TOKEN()).balanceOf(address(assetVault.FEE_RECIPIENT()));
-        assetVault_withdrawProfit();
+        assetVault_claimProfit();
         uint256 balAfter = (assetVault.ASSET_TOKEN()).balanceOf(address(assetVault.FEE_RECIPIENT()));
 
         eq(balAfter - balB4, amt, "Amt has been sent to recipient");
