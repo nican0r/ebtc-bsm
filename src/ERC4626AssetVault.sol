@@ -28,16 +28,21 @@ contract ERC4626AssetVault is BaseAssetVault, IERC4626AssetVault {
     function _beforeWithdraw(
         uint256 assetAmount,
         uint256 feeAmount
-    ) internal override {
-        _ensureLiquidity(assetAmount);
+    ) internal override returns (uint256) {
+        uint256 redeemedAmount = _ensureLiquidity(assetAmount);
 
+        // remove assetAmount from depositAmount even if redeemedAmount < assetAmount
         super._beforeWithdraw(assetAmount, feeAmount);
+
+        return redeemedAmount;
     }
 
     /// @notice Pull liquidity from the external lending vault if necessary
-    function _ensureLiquidity(uint256 amountRequired) private {
+    function _ensureLiquidity(uint256 amountRequired) private returns (uint256 amountRedeemed) {
         /// @dev super._totalBalance() returns asset balance for this contract
         uint256 liquidBalance = super._totalBalance();
+
+        amountRedeemed = amountRequired;
 
         if (amountRequired > liquidBalance) {
             uint256 deficit;
@@ -49,7 +54,12 @@ contract ERC4626AssetVault is BaseAssetVault, IERC4626AssetVault {
             // this prevents the vault from taking on losses
             uint256 shares = EXTERNAL_VAULT.convertToShares(deficit);
 
+            uint256 balanceBefore = ASSET_TOKEN.balanceOf(address(this));
             EXTERNAL_VAULT.redeem(shares, address(this), address(this));
+            uint256 balanceAfter = ASSET_TOKEN.balanceOf(address(this));
+
+            // amountRedeemed can be less than deficit because of rounding
+            amountRedeemed = liquidBalance + (balanceAfter - balanceBefore);
         }
     }
 
@@ -59,9 +69,9 @@ contract ERC4626AssetVault is BaseAssetVault, IERC4626AssetVault {
     }
 
     function _withdrawProfit(uint256 profitAmount) internal override {
-        _ensureLiquidity(profitAmount);
+        uint256 redeemedAmount = _ensureLiquidity(profitAmount);
 
-        super._withdrawProfit(profitAmount);
+        super._withdrawProfit(redeemedAmount);
     }
 
     /// @notice Redeem all shares

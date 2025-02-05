@@ -8,10 +8,10 @@ contract GovernanceTests is BSMTestBase {
     function testClaimProfit() public {
         vm.expectRevert("Auth: UNAUTHORIZED");
         vm.prank(testMinter);
-        assetVault.withdrawProfit();
+        assetVault.claimProfit();
 
         vm.prank(techOpsMultisig);
-        assetVault.withdrawProfit();
+        assetVault.claimProfit();
     }
 
     function testSetBuyAssetFee() public {

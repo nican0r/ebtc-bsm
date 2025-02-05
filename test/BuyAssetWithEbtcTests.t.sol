@@ -44,26 +44,25 @@ contract BuyAssetWithEbtcTests is BSMTestBase {
         assertEq(assetVault.depositAmount(), 4e18);
 
         vm.prank(techOpsMultisig);
-        assetVault.withdrawProfit();
+        assetVault.claimProfit();
 
         assertEq(mockAssetToken.balanceOf(defaultFeeRecipient), 0.01e18);
         assertEq(assetVault.feeProfit(), 0);
     }
 
     function testBuyAssetFeeAuthorizedUser() public {
-   /*     // 1% fee
+        // 1% fee
         vm.prank(techOpsMultisig);
         bsmTester.setFeeToBuyAsset(100);
 
         vm.prank(testMinter);
         bsmTester.buyEbtcWithAsset(5e18);
 
-        vm.prank(techOpsMultisig);
-        bsmTester.addAuthorizedUser(testAuthorizedUser);
+        vm.expectEmit();
+        emit IEbtcBSM.BoughtAssetWithEbtc(1e18, 1e18, 0);
 
-        // TODO: test events
         vm.prank(testAuthorizedUser);
-        assertEq(bsmTester.buyAssetWithEbtc(1e18), 1e18); */
+        assertEq(bsmTester.buyAssetWithEbtcNoFee(1e18), 1e18);
     }
 
     function testBuyAssetFailAboveDepositAmount() public {
