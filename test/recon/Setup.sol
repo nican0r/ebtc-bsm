@@ -13,6 +13,9 @@ import {BSMTestBase} from "../BSMTestBase.sol";
 
 abstract contract Setup is BaseSetup, BSMTestBase, ActorManager, AssetManager {
     address second_actor = address(0x411c3);
+    
+    // CONFIG
+    bool ALLOWS_REKT = bool(false);
 
     function setup() internal virtual override {
         BSMTestBase.setUp();

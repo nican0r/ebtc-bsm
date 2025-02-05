@@ -19,8 +19,23 @@ contract MockAlwaysTrueAuthority {
 abstract contract AdminTargets is BaseTargetFunctions, Properties {
 
     /// === Asset Vault === ///
-    function assetVault_depositToExternalVault(uint256 assetsToDeposit, uint256 expectedShares) public updateGhosts asTechops {
+    function assetVault_depositToExternalVault_rekt(uint256 assetsToDeposit, uint256 expectedShares) public updateGhosts asTechops {
+        require(ALLOWS_REKT, "Allows rekt");
         assetVault.depositToExternalVault(assetsToDeposit, expectedShares);
+    }
+    /// === Asset Vault === ///
+    function assetVault_depositToExternalVault_not_rekt(uint256 assetsToDeposit, uint256 expectedShares) public updateGhosts {
+        require(!ALLOWS_REKT, "Must not allow rekt");
+
+        uint256 balanceB4 = assetVault.totalBalance();
+
+        // asTechops
+        vm.prank(address(techOpsMultisig));
+        assetVault.depositToExternalVault(assetsToDeposit, expectedShares);
+
+        uint256 balanceAfter = assetVault.totalBalance();
+
+        require(balanceAfter >= balanceB4, "Prevent Self Rekt");
     }
 
     function assetVault_redeemFromExternalVault(uint256 sharesToRedeem, uint256 expectedAssets) public updateGhosts asTechops {
