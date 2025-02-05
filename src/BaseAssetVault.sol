@@ -5,6 +5,8 @@ import { AuthNoOwner } from "./Dependencies/AuthNoOwner.sol";
 import { IAssetVault } from "./Dependencies/IAssetVault.sol";
 import { SafeERC20, IERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+import "forge-std/console2.sol";
+
 contract BaseAssetVault is AuthNoOwner, IAssetVault {
     using SafeERC20 for IERC20;
 
@@ -57,7 +59,9 @@ contract BaseAssetVault is AuthNoOwner, IAssetVault {
     }
 
     function _claimProfit() internal {
+        console2.log("_claimProfit");
         uint256 profit = feeProfit();
+        console2.log("profit", profit);
         if (profit > 0) {
             _withdrawProfit(profit);
             // INVARIANT: total balance must be >= deposit amount
@@ -98,7 +102,12 @@ contract BaseAssetVault is AuthNoOwner, IAssetVault {
     }
 
     function feeProfit() public view returns (uint256) {
-        return _totalBalance() - depositAmount;
+        uint256 tb = _totalBalance();
+        if(tb > depositAmount) {
+            return _totalBalance() - depositAmount;
+        }
+
+        return 0;
     }
 
     /// @notice Claim profit (fees + external lending profit)

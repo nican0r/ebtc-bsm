@@ -12,3 +12,8 @@ docs/
 
 # Dotenv file
 .env
+
+#Fuzzers
+medusa
+echidna
+crytic-export
