@@ -5,6 +5,7 @@ import {BaseAssetVault} from "./BaseAssetVault.sol";
 import {IERC4626AssetVault} from "./Dependencies/IERC4626AssetVault.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {console} from "forge-std/console.sol";
 
 contract ERC4626AssetVault is BaseAssetVault, IERC4626AssetVault {
     using SafeERC20 for IERC20;
@@ -80,8 +81,11 @@ contract ERC4626AssetVault is BaseAssetVault, IERC4626AssetVault {
     }
 
     function depositToExternalVault(uint256 assetsToDeposit, uint256 expectedShares) external requiresAuth {
+        console.log("balance before", ASSET_TOKEN.balanceOf(msg.sender));
         ASSET_TOKEN.safeIncreaseAllowance(address(EXTERNAL_VAULT), assetsToDeposit);
         uint256 shares = EXTERNAL_VAULT.deposit(depositAmount, address(this));
+        console.log(shares);
+        console.log("balance afte r", ASSET_TOKEN.balanceOf(msg.sender));
         if (shares < expectedShares) {
             revert TooFewSharesReceived(expectedShares, shares);
         }

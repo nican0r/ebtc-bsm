@@ -229,7 +229,7 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
 
         uint256 totalBalance = assetVault.totalBalance();
         if (totalBalance > 0) {
-            /// @dev cache deposit amount (will be set to 0 aftr migrateTo())
+            /// @dev cache deposit amount (will be set to 0 after migrateTo())
             uint256 depositAmount = assetVault.depositAmount();
 
             /// @dev transfer liquidity to new vault

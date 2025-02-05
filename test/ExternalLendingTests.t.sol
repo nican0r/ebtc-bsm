@@ -28,6 +28,64 @@ contract ExternalLendingTests is BSMTestBase {
             assetVault.claimProfit.selector,
             true
         );
+        authority.setRoleCapability(
+            15,
+            address(newAssetVault),
+            assetVault.depositToExternalVault.selector,
+            true
+        );
+
+         authority.setRoleCapability(
+            15,
+            address(newAssetVault),
+            assetVault.redeemFromExternalVault.selector,
+            true
+        );
+        vm.stopPrank();
+
+        mockAssetToken.mint(techOpsMultisig, 10e18);
+    }
+    //TODO: tests events if needed
+    function testBasicExternalDeposit() public {
+        vm.expectRevert("Auth: UNAUTHORIZED");
+        newAssetVault.depositToExternalVault(1e18, 1);
+        
+        vm.startPrank(techOpsMultisig);
+        vm.expectRevert(abi.encodeWithSelector(ERC4626AssetVault.TooFewSharesReceived.selector, 1, 0));
+        newAssetVault.depositToExternalVault(1e18, 1);
+
+        uint256 beforeAllowance = mockAssetToken.balanceOf(address(newExternalVault));
+        uint256 beforeBalance = mockAssetToken.balanceOf(techOpsMultisig);
+
+        mockAssetToken.approve(address(newExternalVault), 10e18);
+        newAssetVault.depositToExternalVault(10e18, 1);
+
+        uint256 afterAllowance = mockAssetToken.balanceOf(address(newExternalVault));
+        uint256 afterBalance = mockAssetToken.balanceOf(techOpsMultisig);
+
+        //test post operation variables including allowance accounting
         vm.stopPrank();
     }
+    
+    function testBasicExternalRedeem() public {
+        vm.expectRevert("Auth: UNAUTHORIZED");
+        newAssetVault.redeemFromExternalVault(1e18, 1);
+
+        vm.startPrank(techOpsMultisig);
+        // Redeem before making deposit
+        vm.expectRevert();
+        newAssetVault.redeemFromExternalVault(1e18, 1);
+        vm.stopPrank();
+    }
+
+    function testInvalidExternalDeposit() public {
+        //invalid shares amount
+        //test deposit also decreased the allowance
+    }
+
+    function testInvalidExternalRedeem() public {
+        //invalid asset amount
+    }
+
+    //tests complex scenarios including test claim profit after
 }
