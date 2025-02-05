@@ -1,66 +1,21 @@
-## Foundry
+# eBTC Stability Module
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+## Overview
 
-Foundry consists of:
+The BSM contract facilitates bi-directional exchange between eBTC and other BTC-denominated assets with no slippage. 
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+## Asset Vault
 
-## Documentation
+The BSM uses asset vaults to make the architecture more modular. This modular design allows the BSM to perform external lending by depositing idle assets into various money markets. This external lending capability is controlled through a configurable liquidity buffer (100% buffer maintains full reserves). Any yields generated from these lending activities contribute to protocol revenue, which governance can allocate to incentivize stEBTC.
 
-https://book.getfoundry.sh/
+## Fee Mechanism
 
-## Usage
+The BSM can optionally charge a fee on swap operations. The fee percentage is controlled by governance and is capped at 20%.
 
-### Build
+## Oracle Module
 
-```shell
-$ forge build
-```
+The Oracle Module pauses minting if the asset price drops too much relative to eBTC. This check does not apply to eBTC burning because it reduces overall system risk.
 
-### Test
+## Minting Cap
 
-```shell
-$ forge test
-```
-
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+The BSM employs a dynamic minting cap based on the eBTC total supply TWAP, which restricts the amount of eBTC that can be created through asset deposits. This security feature provides controlled exposure to external assets, protecting the system from potential manipulation.
