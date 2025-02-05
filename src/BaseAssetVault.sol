@@ -47,12 +47,22 @@ contract BaseAssetVault is AuthNoOwner, IAssetVault {
         return assetAmount;
     }
 
+    /// @notice withdraw profit to FEE_RECIPIENT
     function _withdrawProfit(uint256 profitAmount) internal virtual {
         ASSET_TOKEN.safeTransfer(FEE_RECIPIENT, profitAmount);
     }
 
     function _beforeMigration() internal virtual {
         // Do nothing
+    }
+
+    function _claimProfit() internal {
+        uint256 profit = feeProfit();
+        if (profit > 0) {
+            _withdrawProfit(profit);
+            // INVARIANT: total balance must be >= deposit amount
+            require(_totalBalance() >= depositAmount);
+        }        
     }
 
     function totalBalance() external view returns (uint256) {
@@ -70,7 +80,7 @@ contract BaseAssetVault is AuthNoOwner, IAssetVault {
     /// @notice Allows the BSM to migrate liquidity to a new vault
     function migrateTo(address newVault) external onlyBSM {
         /// @dev take profit first (totalBalance == depositAmount after)
-        withdrawProfit();
+        _claimProfit();
 
         /// @dev clear depositAmount in old vault (address(this))
         depositAmount = 0;
@@ -91,12 +101,8 @@ contract BaseAssetVault is AuthNoOwner, IAssetVault {
         return _totalBalance() - depositAmount;
     }
 
-    function withdrawProfit() public requiresAuth {
-        uint256 profit = feeProfit();
-        if (profit > 0) {
-            _withdrawProfit(profit);
-            // INVARIANT: total balance must be >= deposit amount
-            require(_totalBalance() >= depositAmount);
-        }
+    /// @notice Claim profit (fees + external lending profit)
+    function claimProfit() external requiresAuth {
+        _claimProfit();
     }
 }

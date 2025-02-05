@@ -87,6 +87,7 @@ contract BSMTestBase is Test {
         authority.setUserRole(address(bsmTester), 1, true);
         authority.setUserRole(address(bsmTester), 2, true);
         authority.setRoleName(15, "BSM: Governance");
+        authority.setRoleName(16, "BSM: AuthorizedUser");
         authority.setRoleCapability(
             15,
             address(bsmTester),
@@ -125,8 +126,14 @@ contract BSMTestBase is Test {
         );
         authority.setRoleCapability(
             15,
+            address(bsmTester),
+            bsmTester.setOracleModule.selector,
+            true
+        );
+        authority.setRoleCapability(
+            15,
             address(assetVault),
-            assetVault.withdrawProfit.selector,
+            assetVault.claimProfit.selector,
             true
         );
         authority.setRoleCapability(
@@ -147,7 +154,22 @@ contract BSMTestBase is Test {
             oracleModule.setMinPrice.selector,
             true
         );
+        // Give ebtc tech ops role 15
         authority.setUserRole(techOpsMultisig, 15, true);
+        authority.setRoleCapability(
+            16,
+            address(bsmTester),
+            bsmTester.buyEbtcWithAssetNoFee.selector,
+            true
+        );
+        authority.setRoleCapability(
+            16,
+            address(bsmTester),
+            bsmTester.buyAssetWithEbtcNoFee.selector,
+            true
+        );
+        // Give authorizedUser role 16
+        authority.setUserRole(testAuthorizedUser, 16, true);
         vm.stopPrank();
 
         vm.startPrank(techOpsMultisig);

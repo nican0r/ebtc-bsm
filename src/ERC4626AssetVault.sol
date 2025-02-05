@@ -31,6 +31,7 @@ contract ERC4626AssetVault is BaseAssetVault, IERC4626AssetVault {
     ) internal override returns (uint256) {
         uint256 redeemedAmount = _ensureLiquidity(assetAmount);
 
+        // remove assetAmount from depositAmount even if redeemedAmount < assetAmount
         super._beforeWithdraw(assetAmount, feeAmount);
 
         return redeemedAmount;
@@ -57,7 +58,7 @@ contract ERC4626AssetVault is BaseAssetVault, IERC4626AssetVault {
             EXTERNAL_VAULT.redeem(shares, address(this), address(this));
             uint256 balanceAfter = ASSET_TOKEN.balanceOf(address(this));
 
-            // redeem amount can be less than deficit because of rounding
+            // amountRedeemed can be less than deficit because of rounding
             amountRedeemed = liquidBalance + (balanceAfter - balanceBefore);
         }
     }

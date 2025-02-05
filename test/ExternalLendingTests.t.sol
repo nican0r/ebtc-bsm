@@ -25,19 +25,9 @@ contract ExternalLendingTests is BSMTestBase {
         authority.setRoleCapability(
             15,
             address(newAssetVault),
-            assetVault.withdrawProfit.selector,
+            assetVault.claimProfit.selector,
             true
         );
         vm.stopPrank();
-    }
-
-    function testRebalance() public {
-        // increase minting cap
-        mockEbtcToken.mint(address(testMinter), 1000e18);
-        mockAssetToken.mint(address(testMinter), 1e18);
-
-        vm.prank(testMinter);
-        bsmTester.buyEbtcWithAsset(10e18);
-
     }
 }
