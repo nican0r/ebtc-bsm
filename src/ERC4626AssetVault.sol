@@ -82,7 +82,7 @@ contract ERC4626AssetVault is BaseAssetVault, IERC4626AssetVault {
 
     function depositToExternalVault(uint256 assetsToDeposit, uint256 minShares) external requiresAuth {
         ASSET_TOKEN.safeIncreaseAllowance(address(EXTERNAL_VAULT), assetsToDeposit);
-        uint256 shares = EXTERNAL_VAULT.deposit(depositAmount, address(this));
+        uint256 shares = EXTERNAL_VAULT.deposit(assetsToDeposit, address(this));
         if (shares < minShares) {
             revert TooFewSharesReceived(minShares, shares);
         }
