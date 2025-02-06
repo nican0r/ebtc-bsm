@@ -9,6 +9,7 @@ import {console} from "forge-std/console.sol";//TODO remove
 contract ExternalLendingTests is BSMTestBase {
     ERC4626Mock internal newExternalVault;
     ERC4626AssetVault internal newAssetVault;
+    uint256 assetsToDeposit = 1e18;
 
     function setUp() public virtual override {
         super.setUp();
@@ -48,16 +49,11 @@ contract ExternalLendingTests is BSMTestBase {
     }
     
     function testBasicExternalDeposit() public {
-        uint256 assetsToDeposit = 1e18;
-        vm.expectRevert("Auth: UNAUTHORIZED");
-        newAssetVault.depositToExternalVault(assetsToDeposit, 1);
-        
         vm.startPrank(techOpsMultisig);
-        vm.expectRevert(abi.encodeWithSelector(ERC4626AssetVault.TooFewSharesReceived.selector, 1, 0));
-        newAssetVault.depositToExternalVault(assetsToDeposit, 1);
 
         uint256 beforeExternalVaultBalance = mockAssetToken.balanceOf(address(newExternalVault));
         uint256 beforeBalance = mockAssetToken.balanceOf(techOpsMultisig);
+        uint256 beforeShares = newExternalVault.balanceOf(address(newAssetVault));
         uint256 shares = newExternalVault.previewDeposit(assetsToDeposit);
         
         mockAssetToken.approve(address(newAssetVault), assetsToDeposit);
@@ -67,15 +63,24 @@ contract ExternalLendingTests is BSMTestBase {
 
         uint256 afterExternalVaultBalance = mockAssetToken.balanceOf(address(newExternalVault));
         uint256 afterBalance = mockAssetToken.balanceOf(techOpsMultisig);
+        uint256 afterShares = newExternalVault.balanceOf(address(newAssetVault));
 
-        //test post operation variables including allowance accounting + shares check
         vm.stopPrank();
 
         assertGt(afterExternalVaultBalance, beforeExternalVaultBalance);
         assertGt(beforeBalance, afterBalance);
+        assertEq(beforeShares, 0);
+        assertEq(afterShares, shares);
     }
     
     function testBasicExternalRedeem() public {
+        vm.startPrank(techOpsMultisig);
+
+        newAssetVault.redeemFromExternalVault(1e18, 1);
+        vm.stopPrank();
+    }
+    
+    function testInvalidExternalRedeem() public {
         vm.expectRevert("Auth: UNAUTHORIZED");
         newAssetVault.redeemFromExternalVault(1e18, 1);
 
@@ -83,16 +88,29 @@ contract ExternalLendingTests is BSMTestBase {
         // Redeem before making deposit
         vm.expectRevert();
         newAssetVault.redeemFromExternalVault(1e18, 1);
+
+        //TODO expect more assets
         vm.stopPrank();
     }
 
     function testInvalidExternalDeposit() public {
-        //invalid shares amount
-        //test deposit also decreased the allowance
-    }
-
-    function testInvalidExternalRedeem() public {
-        //invalid asset amount
+        vm.expectRevert("Auth: UNAUTHORIZED");
+        newAssetVault.depositToExternalVault(1e18, 1);
+        
+        vm.startPrank(techOpsMultisig);
+        //invalid asset amount sent
+        vm.expectRevert(abi.encodeWithSelector(ERC4626AssetVault.TooFewSharesReceived.selector, 1, 0));
+        newAssetVault.depositToExternalVault(0, 1);
+        
+        //invalid expected shares amount
+        uint256 shares = newExternalVault.previewDeposit(assetsToDeposit);
+        
+        mockAssetToken.approve(address(newAssetVault), assetsToDeposit);
+        mockAssetToken.transfer(address(newAssetVault), assetsToDeposit);
+        vm.expectRevert(abi.encodeWithSelector(ERC4626AssetVault.TooFewSharesReceived.selector, shares + 1, shares));
+        newAssetVault.depositToExternalVault(assetsToDeposit, shares + 1);
+        
+        vm.stopPrank();
     }
 
     //tests complex scenarios including test claim profit after
