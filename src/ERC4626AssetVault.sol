@@ -5,7 +5,6 @@ import {BaseAssetVault} from "./BaseAssetVault.sol";
 import {IERC4626AssetVault} from "./Dependencies/IERC4626AssetVault.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {console} from "forge-std/console.sol";
 
 contract ERC4626AssetVault is BaseAssetVault, IERC4626AssetVault {
     using SafeERC20 for IERC20;
