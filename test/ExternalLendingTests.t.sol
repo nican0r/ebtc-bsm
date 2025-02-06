@@ -4,6 +4,7 @@ pragma solidity ^0.8.25;
 import "@openzeppelin/contracts/mocks/token/ERC4626Mock.sol";
 import {ERC4626AssetVault} from "../src/ERC4626AssetVault.sol";
 import "./BSMTestBase.sol";
+import {console} from "forge-std/console.sol";//TODO remove
 
 contract ExternalLendingTests is BSMTestBase {
     ERC4626Mock internal newExternalVault;
@@ -45,26 +46,33 @@ contract ExternalLendingTests is BSMTestBase {
 
         mockAssetToken.mint(techOpsMultisig, 10e18);
     }
-    //TODO: tests events if needed
+    
     function testBasicExternalDeposit() public {
+        uint256 assetsToDeposit = 1e18;
         vm.expectRevert("Auth: UNAUTHORIZED");
-        newAssetVault.depositToExternalVault(1e18, 1);
+        newAssetVault.depositToExternalVault(assetsToDeposit, 1);
         
         vm.startPrank(techOpsMultisig);
         vm.expectRevert(abi.encodeWithSelector(ERC4626AssetVault.TooFewSharesReceived.selector, 1, 0));
-        newAssetVault.depositToExternalVault(1e18, 1);
+        newAssetVault.depositToExternalVault(assetsToDeposit, 1);
 
-        uint256 beforeAllowance = mockAssetToken.balanceOf(address(newExternalVault));
+        uint256 beforeExternalVaultBalance = mockAssetToken.balanceOf(address(newExternalVault));
         uint256 beforeBalance = mockAssetToken.balanceOf(techOpsMultisig);
+        uint256 shares = newExternalVault.previewDeposit(assetsToDeposit);
+        
+        mockAssetToken.approve(address(newAssetVault), assetsToDeposit);
+        mockAssetToken.transfer(address(newAssetVault), assetsToDeposit);
 
-        mockAssetToken.approve(address(newExternalVault), 10e18);
-        newAssetVault.depositToExternalVault(10e18, 1);
+        newAssetVault.depositToExternalVault(assetsToDeposit, shares);
 
-        uint256 afterAllowance = mockAssetToken.balanceOf(address(newExternalVault));
+        uint256 afterExternalVaultBalance = mockAssetToken.balanceOf(address(newExternalVault));
         uint256 afterBalance = mockAssetToken.balanceOf(techOpsMultisig);
 
-        //test post operation variables including allowance accounting
+        //test post operation variables including allowance accounting + shares check
         vm.stopPrank();
+
+        assertGt(afterExternalVaultBalance, beforeExternalVaultBalance);
+        assertGt(beforeBalance, afterBalance);
     }
     
     function testBasicExternalRedeem() public {
