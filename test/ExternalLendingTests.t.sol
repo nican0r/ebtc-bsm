@@ -96,6 +96,30 @@ contract ExternalLendingTests is BSMTestBase {
         assertEq(beforeShares, shares);
         assertEq(afterShares, 0);
     }
+
+    function testPartialExternalRedeem() public {
+        vm.startPrank(techOpsMultisig);
+        mockAssetToken.approve(address(newAssetVault), ASSET_AMOUNT);
+        mockAssetToken.transfer(address(newAssetVault), ASSET_AMOUNT);
+
+        newAssetVault.depositToExternalVault(ASSET_AMOUNT, shares);
+
+        uint256 beforeExternalVaultBalance = mockAssetToken.balanceOf(address(newExternalVault));
+        uint256 beforeBalance = mockAssetToken.balanceOf(techOpsMultisig);
+        uint256 beforeShares = newExternalVault.balanceOf(address(newAssetVault));
+
+        uint256 assets = newExternalVault.previewRedeem(shares);
+        newAssetVault.redeemFromExternalVault(shares / 2, assets / 2);
+        vm.stopPrank();
+
+        uint256 afterExternalVaultBalance = mockAssetToken.balanceOf(address(newExternalVault));
+        uint256 afterBalance = mockAssetToken.balanceOf(techOpsMultisig);
+        uint256 afterShares = newExternalVault.balanceOf(address(newAssetVault));
+
+        assertGt(beforeExternalVaultBalance, afterExternalVaultBalance);
+        assertEq(beforeBalance, afterBalance);
+        assertEq(afterShares, shares / 2);
+    }
     
     function testInvalidExternalRedeem() public {
         vm.expectRevert("Auth: UNAUTHORIZED");
