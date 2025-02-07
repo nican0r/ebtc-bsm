@@ -4,6 +4,7 @@ pragma solidity ^0.8.25;
 import "@openzeppelin/contracts/mocks/token/ERC4626Mock.sol";
 import {ERC4626AssetVault} from "../src/ERC4626AssetVault.sol";
 import "./BSMTestBase.sol";
+// TODO check totalBalance before and after external len ding
 
 contract ExternalLendingTests is BSMTestBase {
     ERC4626Mock internal newExternalVault;
@@ -23,6 +24,9 @@ contract ExternalLendingTests is BSMTestBase {
             address(bsmTester.FEE_RECIPIENT())
         );
         shares = newExternalVault.previewDeposit(ASSET_AMOUNT);
+        vm.prank(techOpsMultisig);
+        bsmTester.updateAssetVault(address(newAssetVault));
+
         vm.startPrank(defaultGovernance);
         authority.setRoleCapability(
             15,
@@ -46,6 +50,8 @@ contract ExternalLendingTests is BSMTestBase {
         vm.stopPrank();
 
         mockAssetToken.mint(techOpsMultisig, 10e18);
+        vm.prank(techOpsMultisig);
+        mockAssetToken.approve(address(bsmTester), type(uint256).max);
     }
     
     function testBasicExternalDeposit() public {
@@ -54,15 +60,18 @@ contract ExternalLendingTests is BSMTestBase {
         uint256 beforeExternalVaultBalance = mockAssetToken.balanceOf(address(newExternalVault));
         uint256 beforeBalance = mockAssetToken.balanceOf(techOpsMultisig);
         uint256 beforeShares = newExternalVault.balanceOf(address(newAssetVault));
-        
-        mockAssetToken.approve(address(newAssetVault), ASSET_AMOUNT);
-        mockAssetToken.transfer(address(newAssetVault), ASSET_AMOUNT);
 
+        bsmTester.buyEbtcWithAsset(ASSET_AMOUNT);
+
+        uint256 beforeDepositAmount = newAssetVault.depositAmount();
+        uint256 beforeTotalBalance = newAssetVault.totalBalance();
         newAssetVault.depositToExternalVault(ASSET_AMOUNT, shares);
 
         uint256 afterExternalVaultBalance = mockAssetToken.balanceOf(address(newExternalVault));
         uint256 afterBalance = mockAssetToken.balanceOf(techOpsMultisig);
         uint256 afterShares = newExternalVault.balanceOf(address(newAssetVault));
+        uint256 afterDepositAmount = newAssetVault.depositAmount();
+        uint256 afterTotalBalance = newAssetVault.totalBalance();
 
         vm.stopPrank();
 
@@ -70,37 +79,43 @@ contract ExternalLendingTests is BSMTestBase {
         assertGt(beforeBalance, afterBalance);
         assertEq(beforeShares, 0);
         assertEq(afterShares, shares);
+        assertEq(beforeDepositAmount, afterDepositAmount);
+        assertEq(beforeTotalBalance, afterTotalBalance);
     }
     
     function testBasicExternalRedeem() public {
         vm.startPrank(techOpsMultisig);
-        mockAssetToken.approve(address(newAssetVault), ASSET_AMOUNT);
-        mockAssetToken.transfer(address(newAssetVault), ASSET_AMOUNT);
+        bsmTester.buyEbtcWithAsset(ASSET_AMOUNT);
 
         newAssetVault.depositToExternalVault(ASSET_AMOUNT, shares);
 
         uint256 beforeExternalVaultBalance = mockAssetToken.balanceOf(address(newExternalVault));
         uint256 beforeBalance = mockAssetToken.balanceOf(techOpsMultisig);
         uint256 beforeShares = newExternalVault.balanceOf(address(newAssetVault));
-
+        uint256 beforeDepositAmount = newAssetVault.depositAmount();
         uint256 assets = newExternalVault.previewRedeem(shares);
+        uint256 beforeTotalBalance = newAssetVault.totalBalance();
+
         newAssetVault.redeemFromExternalVault(shares, assets);
         vm.stopPrank();
 
         uint256 afterExternalVaultBalance = mockAssetToken.balanceOf(address(newExternalVault));
         uint256 afterBalance = mockAssetToken.balanceOf(techOpsMultisig);
         uint256 afterShares = newExternalVault.balanceOf(address(newAssetVault));
+        uint256 afterDepositAmount = newAssetVault.depositAmount();
+        uint256 afterTotalBalance = newAssetVault.totalBalance();
 
         assertGt(beforeExternalVaultBalance, afterExternalVaultBalance);
         assertEq(beforeBalance, afterBalance);
         assertEq(beforeShares, shares);
         assertEq(afterShares, 0);
+        assertEq(beforeDepositAmount, afterDepositAmount);
+        assertEq(beforeTotalBalance, afterTotalBalance);
     }
 
     function testPartialExternalRedeem() public {
         vm.startPrank(techOpsMultisig);
-        mockAssetToken.approve(address(newAssetVault), ASSET_AMOUNT);
-        mockAssetToken.transfer(address(newAssetVault), ASSET_AMOUNT);
+        bsmTester.buyEbtcWithAsset(ASSET_AMOUNT);
 
         newAssetVault.depositToExternalVault(ASSET_AMOUNT, shares);
 
@@ -130,8 +145,7 @@ contract ExternalLendingTests is BSMTestBase {
         vm.expectRevert();
         newAssetVault.redeemFromExternalVault(1e18, 1);
 
-        mockAssetToken.approve(address(newAssetVault), ASSET_AMOUNT);
-        mockAssetToken.transfer(address(newAssetVault), ASSET_AMOUNT);
+        bsmTester.buyEbtcWithAsset(ASSET_AMOUNT);
 
         newAssetVault.depositToExternalVault(ASSET_AMOUNT, shares);
 
@@ -151,8 +165,7 @@ contract ExternalLendingTests is BSMTestBase {
         newAssetVault.depositToExternalVault(0, 1);
         
         //invalid expected shares amount
-        mockAssetToken.approve(address(newAssetVault), ASSET_AMOUNT);
-        mockAssetToken.transfer(address(newAssetVault), ASSET_AMOUNT);
+        bsmTester.buyEbtcWithAsset(ASSET_AMOUNT);
         vm.expectRevert(abi.encodeWithSelector(ERC4626AssetVault.TooFewSharesReceived.selector, shares + 1, shares));
         newAssetVault.depositToExternalVault(ASSET_AMOUNT, shares + 1);
         
