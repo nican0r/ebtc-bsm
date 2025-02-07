@@ -35,8 +35,8 @@ contract AuthNoOwner {
         return (address(auth) != address(0) && auth.canCall(user, address(this), functionSig));
     }
 
-    /// @notice Changed constructor to initialize to allow flexiblity of constructor vs initializer use
-    /// @notice sets authorityInitiailzed flag to ensure only one use of
+    /// @notice Changed constructor to initialize to allow flexibility of constructor vs initializer use
+    /// @notice sets authorityInitialized flag to ensure only one use of
     function _initializeAuthority(address newAuthority) internal {
         require(address(_authority) == address(0), "Auth: authority is non-zero");
         require(!_authorityInitialized, "Auth: authority already initialized");

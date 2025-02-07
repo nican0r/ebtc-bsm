@@ -12,8 +12,8 @@ contract ERC4626AssetVault is BaseAssetVault, IERC4626AssetVault {
     uint256 public constant BPS = 10000;
     IERC4626 public immutable EXTERNAL_VAULT;
 
-    error TooFewSharesReceived(uint256 expectedShares, uint256 actualShares);
-    error TooFewAssetsReceived(uint256 expectedAssets, uint256 actualAssets);
+    error TooFewSharesReceived(uint256 minShares, uint256 actualShares);
+    error TooFewAssetsReceived(uint256 minAssets, uint256 actualAssets);
 
     constructor(
         address _externalVault,
@@ -79,18 +79,18 @@ contract ERC4626AssetVault is BaseAssetVault, IERC4626AssetVault {
         EXTERNAL_VAULT.redeem(EXTERNAL_VAULT.balanceOf(address(this)), address(this), address(this));
     }
 
-    function depositToExternalVault(uint256 assetsToDeposit, uint256 expectedShares) external requiresAuth {
+    function depositToExternalVault(uint256 assetsToDeposit, uint256 minShares) external requiresAuth {
         ASSET_TOKEN.safeIncreaseAllowance(address(EXTERNAL_VAULT), assetsToDeposit);
-        uint256 shares = EXTERNAL_VAULT.deposit(depositAmount, address(this));
-        if (shares < expectedShares) {
-            revert TooFewSharesReceived(expectedShares, shares);
+        uint256 shares = EXTERNAL_VAULT.deposit(assetsToDeposit, address(this));
+        if (shares < minShares) {
+            revert TooFewSharesReceived(minShares, shares);
         }
     }
 
-    function redeemFromExternalVault(uint256 sharesToRedeem, uint256 expectedAssets) external requiresAuth {
+    function redeemFromExternalVault(uint256 sharesToRedeem, uint256 minAssets) external requiresAuth {
         uint256 assets = EXTERNAL_VAULT.redeem(sharesToRedeem, address(this), address(this));
-        if (assets < expectedAssets) {
-            revert TooFewAssetsReceived(expectedAssets, assets);
+        if (assets < minAssets) {
+            revert TooFewAssetsReceived(minAssets, assets);
         }
     }
 }
