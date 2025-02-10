@@ -193,7 +193,9 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
 
     function previewBuyAsset(
         uint256 _ebtcAmountIn
-    ) external returns (uint256 _assetAmountOut) {}
+    ) external returns (uint256 _assetAmountOut) {
+        return _previewBuyAsset(_ebtcAmountIn, _feeToBuy(_ebtcAmountIn););
+    }
 
     /**
      * @notice Allows users to mint eBTC by depositing asset tokens
