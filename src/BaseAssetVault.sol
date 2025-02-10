@@ -5,8 +5,6 @@ import { AuthNoOwner } from "./Dependencies/AuthNoOwner.sol";
 import { IAssetVault } from "./Dependencies/IAssetVault.sol";
 import { SafeERC20, IERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "forge-std/console2.sol";
-
 contract BaseAssetVault is AuthNoOwner, IAssetVault {
     using SafeERC20 for IERC20;
 
@@ -49,6 +47,10 @@ contract BaseAssetVault is AuthNoOwner, IAssetVault {
         return assetAmount;
     }
 
+    function _previewWithdraw(uint256 assetAmount) internal virtual view returns (uint256) {
+        return assetAmount;
+    }
+
     /// @notice withdraw profit to FEE_RECIPIENT
     function _withdrawProfit(uint256 profitAmount) internal virtual {
         ASSET_TOKEN.safeTransfer(FEE_RECIPIENT, profitAmount);
@@ -59,9 +61,7 @@ contract BaseAssetVault is AuthNoOwner, IAssetVault {
     }
 
     function _claimProfit() internal {
-        console2.log("_claimProfit");
         uint256 profit = feeProfit();
-        console2.log("profit", profit);
         if (profit > 0) {
             _withdrawProfit(profit);
             // INVARIANT: total balance must be >= deposit amount
@@ -79,6 +79,10 @@ contract BaseAssetVault is AuthNoOwner, IAssetVault {
 
     function beforeWithdraw(uint256 assetAmount, uint256 feeAmount) external onlyBSM returns (uint256) {
         return _beforeWithdraw(assetAmount, feeAmount);
+    }
+
+    function previewWithdraw(uint256 assetAmount) external view returns (uint256) {
+        return _previewWithdraw(assetAmount);
     }
 
     /// @notice Allows the BSM to migrate liquidity to a new vault

@@ -7,7 +7,7 @@ import {IEbtcBSM} from "../src/Dependencies/IEbtcBSM.sol";
 contract BuyAssetTests is BSMTestBase {
 
     event AssetBought(uint256 ebtcAmountIn, uint256 assetAmountOut, uint256 feeAmount);
-    event FeeToBuyAssetUpdated(uint256 oldFee, uint256 newFee);
+    event FeeToBuyUpdated(uint256 oldFee, uint256 newFee);
 
     function testBuyAssetSuccess() public {
         vm.prank(testMinter);
@@ -33,8 +33,8 @@ contract BuyAssetTests is BSMTestBase {
         // 1% fee
         vm.prank(techOpsMultisig);
         vm.expectEmit(false, true, false, false);
-        emit FeeToBuyAssetUpdated(0, 100);
-        bsmTester.setFeeToBuyAsset(100);
+        emit FeeToBuyUpdated(0, 100);
+        bsmTester.setFeeToBuy(100);
 
         vm.recordLogs();
         vm.prank(testMinter);
@@ -70,7 +70,7 @@ contract BuyAssetTests is BSMTestBase {
     function testBuyAssetFeeAuthorizedUser() public {
         // 1% fee
         vm.prank(techOpsMultisig);
-        bsmTester.setFeeToBuyAsset(100);
+        bsmTester.setFeeToBuy(100);
 
         vm.prank(testMinter);
         bsmTester.sellAsset(5e18, testMinter);

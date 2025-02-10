@@ -84,11 +84,11 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
     }
 
     function bsmTester_setFeeToBuyAsset(uint256 _feeToBuyAssetBPS) public updateGhosts asTechops {
-        bsmTester.setFeeToBuyAsset(_feeToBuyAssetBPS);
+        bsmTester.setFeeToBuy(_feeToBuyAssetBPS);
     }
 
     function bsmTester_setFeeToBuyEbtc(uint256 _feeToBuyEbtcBPS) public updateGhosts asTechops {
-        bsmTester.setFeeToBuyEbtc(_feeToBuyEbtcBPS);
+        bsmTester.setFeeToSell(_feeToBuyEbtcBPS);
     }
 
     function bsmTester_setMintingCap(uint256 _mintingCapBPS) public updateGhosts asTechops {

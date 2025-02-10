@@ -19,13 +19,12 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
 
     // Immutables
     IERC20 public immutable ASSET_TOKEN;
-    // TODO: make this configurable
     IEbtcToken public immutable EBTC_TOKEN;
     IActivePool public immutable ACTIVE_POOL;
     address public immutable FEE_RECIPIENT;
 
-    uint256 public feeToBuyEbtcBPS;
-    uint256 public feeToBuyAssetBPS;
+    uint256 public feeToSellBPS;
+    uint256 public feeToBuyBPS;
     /// @notice minting cap % of ebtc total supply TWAP
     uint256 public mintingCapBPS;
     uint256 public totalMinted;
@@ -96,13 +95,34 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
         }
     }
 
-    function _feeToBuyAsset(uint256 _amount) private view returns (uint256) {
-        return (_amount * feeToBuyAssetBPS) / BPS;
+    function _feeToBuy(uint256 _amount) private view returns (uint256) {
+        return (_amount * feeToBuyBPS) / BPS;
     }
 
-    function _feeToBuyEbtc(uint256 _amount) private view returns (uint256) {
-        uint256 fee = feeToBuyEbtcBPS;
+    function _feeToSell(uint256 _amount) private view returns (uint256) {
+        uint256 fee = feeToSellBPS;
         return (_amount * fee) / (fee + BPS);
+    }
+
+    function _previewSellAsset(
+        uint256 _assetAmountIn,
+        uint256 feeAmount
+    ) private view returns (uint256 _ebtcAmountOut) {
+        // TODO: figure out if it's possible to check oracle and minting cap here
+        _ebtcAmountOut = _assetAmountIn - feeAmount;
+    }
+
+    function _previewBuyAsset(
+        uint256 _ebtcAmountIn,
+        uint256 feeAmount
+    ) private view returns (uint256 _assetAmountOut) {
+        // ebtc to asset price is treated as 1 for buyAsset
+        uint256 depositAmount = assetVault.depositAmount();
+        if (_ebtcAmountIn > depositAmount) {
+            revert InsufficientAssetTokens(_ebtcAmountIn, depositAmount);
+        }
+
+        _assetAmountOut = assetVault.previewWithdraw(_ebtcAmountIn) - feeAmount;
     }
 
     function _sellAsset(
@@ -149,7 +169,10 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
 
         totalMinted -= _ebtcAmountIn;
 
-        uint256 redeemedAmount = assetVault.beforeWithdraw(_ebtcAmountIn, feeAmount);
+        uint256 redeemedAmount = assetVault.beforeWithdraw(
+            _ebtcAmountIn,
+            feeAmount
+        );
 
         _assetAmountOut = redeemedAmount - feeAmount;
         // INVARIANT: _assetAmountOut <= _ebtcAmountIn
@@ -162,6 +185,16 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
         emit AssetBought(_ebtcAmountIn, _assetAmountOut, feeAmount);
     }
 
+    function previewSellAsset(
+        uint256 _assetAmountIn
+    ) external returns (uint256 _ebtcAmountOut) {
+        return _previewSellAsset(_assetAmountIn, _feeToSell(_assetAmountIn));
+    }
+
+    function previewBuyAsset(
+        uint256 _ebtcAmountIn
+    ) external returns (uint256 _assetAmountOut) {}
+
     /**
      * @notice Allows users to mint eBTC by depositing asset tokens
      * @dev This function assumes the exchange rate between the asset token and eBTC is 1:1
@@ -173,7 +206,8 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
         uint256 _assetAmountIn,
         address recipient
     ) external whenNotPaused returns (uint256 _ebtcAmountOut) {
-        return _sellAsset(_assetAmountIn, recipient, _feeToBuyEbtc(_assetAmountIn));
+        return
+            _sellAsset(_assetAmountIn, recipient, _feeToSell(_assetAmountIn));
     }
 
     /**
@@ -187,7 +221,8 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
         uint256 _ebtcAmountIn,
         address recipient
     ) external whenNotPaused returns (uint256 _assetAmountOut) {
-        return _buyAsset(_ebtcAmountIn, recipient, _feeToBuyAsset(_ebtcAmountIn));
+        return
+            _buyAsset(_ebtcAmountIn, recipient, _feeToBuy(_ebtcAmountIn));
     }
 
     function sellAssetNoFee(
@@ -204,16 +239,16 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
         return _buyAsset(_ebtcAmountIn, recipient, 0);
     }
 
-    function setFeeToBuyEbtc(uint256 _feeToBuyEbtcBPS) external requiresAuth {
-        require(_feeToBuyEbtcBPS <= MAX_FEE);
-        emit FeeToBuyEbtcUpdated(feeToBuyEbtcBPS, _feeToBuyEbtcBPS);
-        feeToBuyEbtcBPS = _feeToBuyEbtcBPS;
+    function setFeeToSell(uint256 _feeToSellBPS) external requiresAuth {
+        require(_feeToSellBPS <= MAX_FEE);
+        emit FeeToSellUpdated(feeToSellBPS, _feeToSellBPS);
+        feeToSellBPS = _feeToSellBPS;
     }
 
-    function setFeeToBuyAsset(uint256 _feeToBuyAssetBPS) external requiresAuth {
-        require(_feeToBuyAssetBPS <= MAX_FEE);
-        emit FeeToBuyAssetUpdated(feeToBuyAssetBPS, _feeToBuyAssetBPS);
-        feeToBuyAssetBPS = _feeToBuyAssetBPS;
+    function setFeeToBuy(uint256 _feeToBuyBPS) external requiresAuth {
+        require(_feeToBuyBPS <= MAX_FEE);
+        emit FeeToBuyUpdated(feeToBuyBPS, _feeToBuyBPS);
+        feeToBuyBPS = _feeToBuyBPS;
     }
 
     function setMintingCap(uint256 _mintingCapBPS) external requiresAuth {

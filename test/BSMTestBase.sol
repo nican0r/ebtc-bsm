@@ -97,13 +97,13 @@ contract BSMTestBase is Test {
         authority.setRoleCapability(
             15,
             address(bsmTester),
-            bsmTester.setFeeToBuyAsset.selector,
+            bsmTester.setFeeToBuy.selector,
             true
         );
         authority.setRoleCapability(
             15,
             address(bsmTester),
-            bsmTester.setFeeToBuyEbtc.selector,
+            bsmTester.setFeeToSell.selector,
             true
         );
         authority.setRoleCapability(

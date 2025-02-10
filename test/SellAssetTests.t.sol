@@ -8,7 +8,7 @@ contract SellAssetTests is BSMTestBase {
         assertEq(mockAssetToken.balanceOf(testMinter), 10e18);
         assertEq(mockEbtcToken.balanceOf(testMinter), 0);
 
-        uint256 fee = 1e18 * bsmTester.feeToBuyAssetBPS() / (bsmTester.feeToBuyAssetBPS() + bsmTester.BPS());
+        uint256 fee = 1e18 * bsmTester.feeToBuyBPS() / (bsmTester.feeToBuyBPS() + bsmTester.BPS());
 
         vm.expectEmit();
         emit IEbtcBSM.AssetSold(1e18, 1e18, fee);
@@ -28,7 +28,7 @@ contract SellAssetTests is BSMTestBase {
     function testBuyEbtcFeeSuccess() public {
         // 1% fee
         vm.prank(techOpsMultisig);
-        bsmTester.setFeeToBuyEbtc(100);
+        bsmTester.setFeeToSell(100);
 
         assertEq(mockAssetToken.balanceOf(testMinter), 10e18);
 
@@ -57,7 +57,7 @@ contract SellAssetTests is BSMTestBase {
 
     function testBuyEbtcFeeAuthorizedUser() public {
         vm.prank(techOpsMultisig);
-        bsmTester.setFeeToBuyEbtc(100);
+        bsmTester.setFeeToSell(100);
 
         vm.expectEmit();
         emit IEbtcBSM.AssetSold(1.01e18, 1.01e18, 0);
