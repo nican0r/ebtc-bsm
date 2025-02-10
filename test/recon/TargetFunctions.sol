@@ -12,10 +12,10 @@ import {ManagersTargets} from "./targets/ManagersTargets.sol";
 
 abstract contract TargetFunctions is AdminTargets, InlinedTests, ManagersTargets {
     function bsmTester_buyAssetWithEbtc(uint256 _ebtcAmountIn) public updateGhosts {
-        bsmTester.buyAssetWithEbtc(_ebtcAmountIn);
+        bsmTester.buyAsset(_ebtcAmountIn, address(this));
     }
 
     function bsmTester_buyEbtcWithAsset(uint256 _assetAmountIn) public updateGhosts {
-        bsmTester.buyEbtcWithAsset(_assetAmountIn);
+        bsmTester.sellAsset(_assetAmountIn, address(this));
     }
 }

@@ -7,9 +7,11 @@ interface IEbtcBSM {
     event FeeToBuyEbtcUpdated(uint256 oldFee, uint256 newFee);
     event FeeToBuyAssetUpdated(uint256 oldFee, uint256 newFee);
     event OracleModuleUpdated(address oldOracle, address newOracle);
-    event BoughtEbtcWithAsset(uint256 assetAmountIn, uint256 ebtcAmountOut, uint256 feeAmount);
-    event BoughtAssetWithEbtc(uint256 ebtcAmountIn, uint256 assetAmountOut, uint256 feeAmount);
+    event AssetSold(uint256 assetAmountIn, uint256 ebtcAmountOut, uint256 feeAmount);
+    event AssetBought(uint256 ebtcAmountIn, uint256 assetAmountOut, uint256 feeAmount);
 
-    function buyEbtcWithAsset(uint256 _assetAmountIn) external returns (uint256 _ebtcAmountOut);
-    function buyAssetWithEbtc(uint256 _ebtcAmountIn) external returns (uint256 _assetAmountOut);
+    function sellAsset(uint256 _assetAmountIn, address recipient) external returns (uint256 _ebtcAmountOut);
+    function sellAssetNoFee(uint256 _assetAmountIn, address recipient) external returns (uint256 _ebtcAmountOut);
+    function buyAsset(uint256 _ebtcAmountIn, address recipient) external returns (uint256 _assetAmountOut);
+    function buyAssetNoFee(uint256 _ebtcAmountIn, address recipient) external returns (uint256 _assetAmountOut);
 }

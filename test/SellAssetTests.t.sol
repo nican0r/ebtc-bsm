@@ -3,7 +3,7 @@ pragma solidity ^0.8.25;
 
 import "./BSMTestBase.sol";
 
-contract BuyEbtcWithAssetTests is BSMTestBase {
+contract SellAssetTests is BSMTestBase {
     function testBuyEbtcSuccess() public {
         assertEq(mockAssetToken.balanceOf(testMinter), 10e18);
         assertEq(mockEbtcToken.balanceOf(testMinter), 0);
@@ -11,10 +11,10 @@ contract BuyEbtcWithAssetTests is BSMTestBase {
         uint256 fee = 1e18 * bsmTester.feeToBuyAssetBPS() / (bsmTester.feeToBuyAssetBPS() + bsmTester.BPS());
 
         vm.expectEmit();
-        emit IEbtcBSM.BoughtEbtcWithAsset(1e18, 1e18, fee);
+        emit IEbtcBSM.AssetSold(1e18, 1e18, fee);
 
         vm.prank(testMinter);
-        assertEq(bsmTester.buyEbtcWithAsset(1e18), 1e18);
+        assertEq(bsmTester.sellAsset(1e18, testMinter), 1e18);
         
         assertEq(mockAssetToken.balanceOf(testMinter), 9e18);
         assertEq(mockEbtcToken.balanceOf(testMinter), 1e18);
@@ -33,10 +33,10 @@ contract BuyEbtcWithAssetTests is BSMTestBase {
         assertEq(mockAssetToken.balanceOf(testMinter), 10e18);
 
         vm.expectEmit();
-        emit IEbtcBSM.BoughtEbtcWithAsset(1.01e18, 1e18, 0.01e18);
+        emit IEbtcBSM.AssetSold(1.01e18, 1e18, 0.01e18);
 
         vm.prank(testMinter);
-        assertEq(bsmTester.buyEbtcWithAsset(1.01e18), 1e18);
+        assertEq(bsmTester.sellAsset(1.01e18, testMinter), 1e18);
 
         assertEq(mockAssetToken.balanceOf(testMinter), 8.99e18);
 
@@ -60,10 +60,10 @@ contract BuyEbtcWithAssetTests is BSMTestBase {
         bsmTester.setFeeToBuyEbtc(100);
 
         vm.expectEmit();
-        emit IEbtcBSM.BoughtEbtcWithAsset(1.01e18, 1.01e18, 0);
+        emit IEbtcBSM.AssetSold(1.01e18, 1.01e18, 0);
 
         vm.prank(testAuthorizedUser);
-        assertEq(bsmTester.buyEbtcWithAssetNoFee(1.01e18), 1.01e18);
+        assertEq(bsmTester.sellAssetNoFee(1.01e18, testAuthorizedUser), 1.01e18);
     }
 
     function testBuyEbtcFailAboveCap() public {
@@ -81,7 +81,7 @@ contract BuyEbtcWithAssetTests is BSMTestBase {
                 maxMint
             )
         );
-        bsmTester.buyEbtcWithAsset(amountToMint);
+        bsmTester.sellAsset(amountToMint, testMinter);
     }
 
     function testBuyEbtcFailBadPrice() public {
@@ -98,7 +98,7 @@ contract BuyEbtcWithAssetTests is BSMTestBase {
 
         vm.expectRevert(abi.encodeWithSelector(EbtcBSM.BadOracleRate.selector));
         vm.prank(testMinter);
-        bsmTester.buyEbtcWithAsset(1e18);
+        bsmTester.sellAsset(1e18, testMinter);
     }
 
     function testBuyEbtcOracleTooOld() public {
@@ -109,7 +109,7 @@ contract BuyEbtcWithAssetTests is BSMTestBase {
 
         vm.expectRevert(abi.encodeWithSelector(OracleModule.StaleOraclePrice.selector, nowTime));
         vm.prank(testMinter);
-        bsmTester.buyEbtcWithAsset(1e18);
+        bsmTester.sellAsset(1e18, testMinter);
     }
 
     function testBuyEbtcFailPaused() public {
@@ -122,7 +122,7 @@ contract BuyEbtcWithAssetTests is BSMTestBase {
 
         vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
         vm.prank(testMinter);
-        bsmTester.buyEbtcWithAsset(1e18);
+        bsmTester.sellAsset(1e18, testMinter);
 
         vm.expectRevert("Auth: UNAUTHORIZED");
         vm.prank(testMinter);

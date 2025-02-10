@@ -61,7 +61,7 @@ contract ExternalLendingTests is BSMTestBase {
         uint256 beforeBalance = mockAssetToken.balanceOf(techOpsMultisig);
         uint256 beforeShares = newExternalVault.balanceOf(address(newAssetVault));
 
-        bsmTester.buyEbtcWithAsset(ASSET_AMOUNT);
+        bsmTester.sellAsset(ASSET_AMOUNT, address(this));
 
         uint256 beforeDepositAmount = newAssetVault.depositAmount();
         uint256 beforeTotalBalance = newAssetVault.totalBalance();
@@ -85,7 +85,7 @@ contract ExternalLendingTests is BSMTestBase {
     
     function testBasicExternalRedeem() public {
         vm.startPrank(techOpsMultisig);
-        bsmTester.buyEbtcWithAsset(ASSET_AMOUNT);
+        bsmTester.sellAsset(ASSET_AMOUNT, address(this));
 
         newAssetVault.depositToExternalVault(ASSET_AMOUNT, shares);
 
@@ -115,7 +115,7 @@ contract ExternalLendingTests is BSMTestBase {
 
     function testPartialExternalRedeem() public {
         vm.startPrank(techOpsMultisig);
-        bsmTester.buyEbtcWithAsset(ASSET_AMOUNT);
+        bsmTester.sellAsset(ASSET_AMOUNT, address(this));
 
         newAssetVault.depositToExternalVault(ASSET_AMOUNT, shares);
 
@@ -145,7 +145,7 @@ contract ExternalLendingTests is BSMTestBase {
         vm.expectRevert();
         newAssetVault.redeemFromExternalVault(1e18, 1);
 
-        bsmTester.buyEbtcWithAsset(ASSET_AMOUNT);
+        bsmTester.sellAsset(ASSET_AMOUNT, address(this));
 
         newAssetVault.depositToExternalVault(ASSET_AMOUNT, shares);
 
@@ -165,7 +165,7 @@ contract ExternalLendingTests is BSMTestBase {
         newAssetVault.depositToExternalVault(0, 1);
         
         //invalid expected shares amount
-        bsmTester.buyEbtcWithAsset(ASSET_AMOUNT);
+        bsmTester.sellAsset(ASSET_AMOUNT, address(this));
         vm.expectRevert(abi.encodeWithSelector(ERC4626AssetVault.TooFewSharesReceived.selector, shares + 1, shares));
         newAssetVault.depositToExternalVault(ASSET_AMOUNT, shares + 1);
         

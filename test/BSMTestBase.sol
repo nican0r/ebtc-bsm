@@ -159,13 +159,13 @@ contract BSMTestBase is Test {
         authority.setRoleCapability(
             16,
             address(bsmTester),
-            bsmTester.buyEbtcWithAssetNoFee.selector,
+            bsmTester.sellAssetNoFee.selector,
             true
         );
         authority.setRoleCapability(
             16,
             address(bsmTester),
-            bsmTester.buyAssetWithEbtcNoFee.selector,
+            bsmTester.buyAssetNoFee.selector,
             true
         );
         // Give authorizedUser role 16

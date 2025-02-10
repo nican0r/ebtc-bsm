@@ -105,8 +105,9 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
         return (_amount * fee) / (fee + BPS);
     }
 
-    function _buyEbtcWithAsset(
+    function _sellAsset(
         uint256 _assetAmountIn,
+        address recipient,
         uint256 feeAmount
     ) internal returns (uint256 _ebtcAmountOut) {
         if (!oracleModule.canMint()) {
@@ -128,13 +129,14 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
 
         totalMinted += _ebtcAmountOut;
 
-        EBTC_TOKEN.mint(msg.sender, _ebtcAmountOut);
+        EBTC_TOKEN.mint(recipient, _ebtcAmountOut);
 
-        emit BoughtEbtcWithAsset(_assetAmountIn, _ebtcAmountOut, feeAmount);
+        emit AssetSold(_assetAmountIn, _ebtcAmountOut, feeAmount);
     }
 
-    function _buyAssetWithEbtc(
+    function _buyAsset(
         uint256 _ebtcAmountIn,
+        address recipient,
         uint256 feeAmount
     ) internal returns (uint256 _assetAmountOut) {
         // ebtc to asset price is treated as 1 for buyAsset
@@ -153,11 +155,11 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
         // INVARIANT: _assetAmountOut <= _ebtcAmountIn
         ASSET_TOKEN.safeTransferFrom(
             address(assetVault),
-            msg.sender,
+            recipient,
             _assetAmountOut
         );
 
-        emit BoughtAssetWithEbtc(_ebtcAmountIn, _assetAmountOut, feeAmount);
+        emit AssetBought(_ebtcAmountIn, _assetAmountOut, feeAmount);
     }
 
     /**
@@ -167,10 +169,11 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
      * @param _assetAmountIn Amount of asset tokens to deposit
      * @return _ebtcAmountOut Amount of eBTC tokens minted to the user
      */
-    function buyEbtcWithAsset(
-        uint256 _assetAmountIn
+    function sellAsset(
+        uint256 _assetAmountIn,
+        address recipient
     ) external whenNotPaused returns (uint256 _ebtcAmountOut) {
-        return _buyEbtcWithAsset(_assetAmountIn, _feeToBuyEbtc(_assetAmountIn));
+        return _sellAsset(_assetAmountIn, recipient, _feeToBuyEbtc(_assetAmountIn));
     }
 
     /**
@@ -180,22 +183,25 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
      * @param _ebtcAmountIn Amount of eBTC tokens to burn
      * @return _assetAmountOut Amount of asset tokens sent to user
      */
-    function buyAssetWithEbtc(
-        uint256 _ebtcAmountIn
+    function buyAsset(
+        uint256 _ebtcAmountIn,
+        address recipient
     ) external whenNotPaused returns (uint256 _assetAmountOut) {
-        return _buyAssetWithEbtc(_ebtcAmountIn, _feeToBuyAsset(_ebtcAmountIn));
+        return _buyAsset(_ebtcAmountIn, recipient, _feeToBuyAsset(_ebtcAmountIn));
     }
 
-    function buyEbtcWithAssetNoFee(
-        uint256 _assetAmountIn
+    function sellAssetNoFee(
+        uint256 _assetAmountIn,
+        address recipient
     ) external whenNotPaused requiresAuth returns (uint256 _ebtcAmountOut) {
-        return _buyEbtcWithAsset(_assetAmountIn, 0);
+        return _sellAsset(_assetAmountIn, recipient, 0);
     }
 
-    function buyAssetWithEbtcNoFee(
-        uint256 _ebtcAmountIn
+    function buyAssetNoFee(
+        uint256 _ebtcAmountIn,
+        address recipient
     ) external whenNotPaused requiresAuth returns (uint256 _assetAmountOut) {
-        return _buyAssetWithEbtc(_ebtcAmountIn, 0);
+        return _buyAsset(_ebtcAmountIn, recipient, 0);
     }
 
     function setFeeToBuyEbtc(uint256 _feeToBuyEbtcBPS) external requiresAuth {
