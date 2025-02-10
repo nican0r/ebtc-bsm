@@ -194,7 +194,7 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
     function previewBuyAsset(
         uint256 _ebtcAmountIn
     ) external returns (uint256 _assetAmountOut) {
-        return _previewBuyAsset(_ebtcAmountIn, _feeToBuy(_ebtcAmountIn););
+        return _previewBuyAsset(_ebtcAmountIn, _feeToBuy(_ebtcAmountIn));
     }
 
     /**
