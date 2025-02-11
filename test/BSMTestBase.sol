@@ -61,11 +61,6 @@ contract BSMTestBase is Test {
             address(authority)
         );
 
-        // create initial ebtc supply
-        mockEbtcToken.mint(defaultGovernance, 50e18);
-        mockAssetOracle.setPrice(1e18);
-        mockAssetOracle.setUpdateTime(block.timestamp);
-
         assetVault = new ERC4626AssetVault(
             address(externalVault),
             address(mockAssetToken),
@@ -73,6 +68,13 @@ contract BSMTestBase is Test {
             address(authority),
             bsmTester.FEE_RECIPIENT()
         );
+        
+        bsmTester.initialize(address(assetVault));
+
+        // create initial ebtc supply
+        mockEbtcToken.mint(defaultGovernance, 50e18);
+        mockAssetOracle.setPrice(1e18);
+        mockAssetOracle.setUpdateTime(block.timestamp);
 
         vm.prank(testMinter);
         mockAssetToken.approve(address(bsmTester), type(uint256).max);
