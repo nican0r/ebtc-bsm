@@ -53,7 +53,7 @@ contract RateLimitingConstraint is IMintingConstraint, AuthNoOwner {
         return (true, "");
     }
 
-    function getMintingCap(address minter) external returns (MintingCap memory) {
+    function getMintingCap(address minter) external view returns (MintingCap memory) {
         return mintingCap[minter];
     }
 

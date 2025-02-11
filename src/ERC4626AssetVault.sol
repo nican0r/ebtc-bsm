@@ -75,6 +75,7 @@ contract ERC4626AssetVault is BaseAssetVault, IERC4626AssetVault {
     }
 
     function _previewWithdraw(uint256 assetAmount) internal override view returns (uint256) {
+        /// @dev using convertToShares + previewRedeem instead of previewWithdraw to round down
         uint256 shares = EXTERNAL_VAULT.convertToShares(assetAmount);
         return EXTERNAL_VAULT.previewRedeem(shares);
     }
