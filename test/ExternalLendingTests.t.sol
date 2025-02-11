@@ -27,27 +27,25 @@ contract ExternalLendingTests is BSMTestBase {
         vm.prank(techOpsMultisig);
         bsmTester.updateAssetVault(address(newAssetVault));
 
-        vm.startPrank(defaultGovernance);
-        authority.setRoleCapability(
+        setRoleCapability(
             15,
             address(newAssetVault),
             assetVault.claimProfit.selector,
             true
         );
-        authority.setRoleCapability(
+        setRoleCapability(
             15,
             address(newAssetVault),
             assetVault.depositToExternalVault.selector,
             true
         );
 
-         authority.setRoleCapability(
+        setRoleCapability(
             15,
             address(newAssetVault),
             assetVault.redeemFromExternalVault.selector,
             true
         );
-        vm.stopPrank();
 
         mockAssetToken.mint(techOpsMultisig, 10e18);
         vm.prank(techOpsMultisig);

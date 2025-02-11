@@ -30,6 +30,11 @@ contract BSMTestBase is Test {
     address internal techOpsMultisig;
     address internal testAuthorizedUser;
 
+    modifier prankDefaultGovernance() {
+        vm.prank(defaultGovernance);
+        _;
+    }
+
     function setUp() public virtual {
         defaultGovernance = vm.addr(0x123456);
         defaultFeeRecipient = vm.addr(0x234567);
@@ -79,53 +84,53 @@ contract BSMTestBase is Test {
         mockAssetToken.approve(address(bsmTester), type(uint256).max);
         mockAssetToken.mint(testMinter, 10e18);
 
-        vm.startPrank(testAuthorizedUser);
+        vm.prank(testAuthorizedUser);
         mockAssetToken.approve(address(bsmTester), type(uint256).max);
+        vm.prank(testAuthorizedUser);
         mockEbtcToken.approve(address(bsmTester), type(uint256).max);
-        vm.stopPrank();
+        
         mockAssetToken.mint(testAuthorizedUser, 10e18);
         mockEbtcToken.mint(testAuthorizedUser, 10e18);
 
         vm.prank(testBuyer);
         mockEbtcToken.mint(testBuyer, 10e18);
 
-        vm.startPrank(defaultGovernance);
         // give eBTC minter and burner roles to BSM tester
-        authority.setUserRole(address(bsmTester), 1, true);
-        authority.setUserRole(address(bsmTester), 2, true);
-        authority.setRoleName(15, "BSM: Governance");
-        authority.setRoleName(16, "BSM: AuthorizedUser");
-        authority.setRoleCapability(
+        setUserRole(address(bsmTester), 1, true);
+        setUserRole(address(bsmTester), 2, true);
+        setRoleName(15, "BSM: Governance");
+        setRoleName(16, "BSM: AuthorizedUser");
+        setRoleCapability(
             15,
             address(bsmTester),
             bsmTester.setFeeToBuy.selector,
             true
         );
-        authority.setRoleCapability(
+        setRoleCapability(
             15,
             address(bsmTester),
             bsmTester.setFeeToSell.selector,
             true
         );
-        authority.setRoleCapability(
+        setRoleCapability(
             15,
             address(bsmTester),
             bsmTester.updateAssetVault.selector,
             true
         );
-        authority.setRoleCapability(
+        setRoleCapability(
             15,
             address(bsmTester),
             bsmTester.pause.selector,
             true
         );
-        authority.setRoleCapability(
+        setRoleCapability(
             15,
             address(bsmTester),
             bsmTester.unpause.selector,
             true
         );
-        authority.setRoleCapability(
+        setRoleCapability(
             15,
             address(bsmTester),
             bsmTester.setOraclePriceConstraint.selector,
@@ -137,25 +142,25 @@ contract BSMTestBase is Test {
             bsmTester.setRateLimitingConstraint.selector,
             true
         );
-        authority.setRoleCapability(
+        setRoleCapability(
             15,
             address(assetVault),
             assetVault.claimProfit.selector,
             true
         );
-        authority.setRoleCapability(
+        setRoleCapability(
             15,
             address(assetVault),
             assetVault.depositToExternalVault.selector,
             true
         );
-        authority.setRoleCapability(
+        setRoleCapability(
             15,
             address(assetVault),
             assetVault.redeemFromExternalVault.selector,
             true
         );
-        authority.setRoleCapability(
+        setRoleCapability(
             15,
             address(oraclePriceConstraint),
             oraclePriceConstraint.setMinPrice.selector,
@@ -168,28 +173,47 @@ contract BSMTestBase is Test {
             true
         );
         // Give ebtc tech ops role 15
-        authority.setUserRole(techOpsMultisig, 15, true);
-        authority.setRoleCapability(
+        setUserRole(techOpsMultisig, 15, true);
+        setRoleCapability(
             16,
             address(bsmTester),
             bsmTester.sellAssetNoFee.selector,
             true
         );
-        authority.setRoleCapability(
+        setRoleCapability(
             16,
             address(bsmTester),
             bsmTester.buyAssetNoFee.selector,
             true
         );
         // Give authorizedUser role 16
-        authority.setUserRole(testAuthorizedUser, 16, true);
-        vm.stopPrank();
+        setUserRole(testAuthorizedUser, 16, true);
 
-        vm.startPrank(techOpsMultisig);
+        vm.prank(techOpsMultisig);
         bsmTester.updateAssetVault(address(assetVault));
         // Set minting cap to 10%
+        vm.prank(techOpsMultisig);
         rateLimitingConstraint.setMintingCap(address(bsmTester), RateLimitingConstraint.MintingCap(1000, 0, false));
-        vm.stopPrank();
+    }
+
+    function setUserRole(address _user, uint8 _role, bool _enabled) internal prankDefaultGovernance {
+        authority.setUserRole(_user, _role, _enabled);
+    }
+
+    function setRoleCapability(uint8 _role,
+            address _target,
+            bytes4 _functionSig,
+            bool _enabled) internal prankDefaultGovernance {
+        authority.setRoleCapability(
+            _role,
+            _target,
+            _functionSig,
+            _enabled
+        );
+    }
+
+    function setRoleName(uint8 _role, string memory _roleName) internal prankDefaultGovernance {
+        authority.setRoleName(_role, _roleName);
     }
 
     function testBsmCannotBeReinitialize() public {
