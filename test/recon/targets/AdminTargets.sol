@@ -5,9 +5,8 @@ import {BaseTargetFunctions} from "@chimera/BaseTargetFunctions.sol";
 import {BeforeAfter} from "../BeforeAfter.sol";
 import {Properties} from "../Properties.sol";
 import {vm} from "@chimera/Hevm.sol";
-
 import "../../../src/ERC4626AssetVault.sol";
-
+import {RateLimitingConstraint} from "../../../src/RateLimitingConstraint.sol";
 
 contract MockAlwaysTrueAuthority {
     function canCall(address user, address target, bytes4 functionSig) external view returns (bool) {
@@ -92,7 +91,7 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
     }
 
     function bsmTester_setMintingCap(uint256 _mintingCapBPS) public updateGhosts asTechops {
-        bsmTester.setMintingCap(_mintingCapBPS);
+        rateLimitingConstraint.setMintingCap(address(bsmTester), RateLimitingConstraint.MintingCap(_mintingCapBPS, 0, false));
     }
 
     function bsmTester_unpause() public updateGhosts asTechops {

@@ -2,6 +2,9 @@
 pragma solidity ^0.8.25;
 
 import "./BSMTestBase.sol";
+import {OraclePriceConstraint} from"../src/OraclePriceConstraint.sol";
+import {RateLimitingConstraint} from"../src/RateLimitingConstraint.sol";
+import {IMintingConstraint} from "../src/Dependencies/IMintingConstraint.sol";
 
 contract SellAssetTests is BSMTestBase {
     function testBuyEbtcSuccess() public {
@@ -67,18 +70,26 @@ contract SellAssetTests is BSMTestBase {
     }
 
     function testBuyEbtcFailAboveCap() public {
+        uint256 mintingCapBPS = rateLimitingConstraint.getMintingCap(address(bsmTester)).relativeCapBPS;
+
         uint256 amountToMint = (mockEbtcToken.totalSupply() *
-            (bsmTester.mintingCapBPS() + 1)) / bsmTester.BPS();
+            (mintingCapBPS + 1)) / bsmTester.BPS();
         uint256 maxMint = (mockEbtcToken.totalSupply() *
-            bsmTester.mintingCapBPS()) / bsmTester.BPS();
+            mintingCapBPS) / bsmTester.BPS();
 
         vm.prank(testMinter);
         vm.expectRevert(
             abi.encodeWithSelector(
-                EbtcBSM.AboveMintingCap.selector,
+                IMintingConstraint.MintingConstraintCheckFailed.selector, 
+                address(rateLimitingConstraint),
                 amountToMint,
-                bsmTester.totalMinted() + amountToMint,
-                maxMint
+                address(bsmTester),
+                abi.encodeWithSelector(
+                    RateLimitingConstraint.AboveMintingCap.selector,
+                    amountToMint,
+                    bsmTester.totalMinted() + amountToMint,
+                    maxMint
+                )
             )
         );
         bsmTester.sellAsset(amountToMint, testMinter);
@@ -87,16 +98,28 @@ contract SellAssetTests is BSMTestBase {
     function testBuyEbtcFailBadPrice() public {
         vm.expectRevert("Auth: UNAUTHORIZED");
         vm.prank(testMinter);
-        oracleModule.setMinPrice(9000);
+        oraclePriceConstraint.setMinPrice(9000);
 
         // set min price to 90% (0.9 min price)
         vm.prank(techOpsMultisig);
-        oracleModule.setMinPrice(9000);
+        oraclePriceConstraint.setMinPrice(9000);
 
         // Drop price to 0.89
         mockAssetOracle.setPrice(0.89e18);
 
-        vm.expectRevert(abi.encodeWithSelector(EbtcBSM.BadOracleRate.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IMintingConstraint.MintingConstraintCheckFailed.selector,
+                address(oraclePriceConstraint),
+                1e18,
+                address(bsmTester),
+                abi.encodeWithSelector(
+                    OraclePriceConstraint.BelowMinPrice.selector, 
+                    0.89e18, // assetPrice
+                    0.9e18   // acceptable min price
+                )
+            )
+        );
         vm.prank(testMinter);
         bsmTester.sellAsset(1e18, testMinter);
     }
@@ -105,9 +128,9 @@ contract SellAssetTests is BSMTestBase {
 
         uint256 nowTime = block.timestamp;
 
-        vm.warp(block.timestamp + oracleModule.oracleFreshnessSeconds() + 1);
+        vm.warp(block.timestamp + oraclePriceConstraint.oracleFreshnessSeconds() + 1);
 
-        vm.expectRevert(abi.encodeWithSelector(OracleModule.StaleOraclePrice.selector, nowTime));
+        vm.expectRevert(abi.encodeWithSelector(OraclePriceConstraint.StaleOraclePrice.selector, nowTime));
         vm.prank(testMinter);
         bsmTester.sellAsset(1e18, testMinter);
     }

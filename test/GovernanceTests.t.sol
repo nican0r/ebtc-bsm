@@ -41,7 +41,7 @@ contract GovernanceTests is BSMTestBase {
     function testSetMintingCap() public {
         vm.expectRevert("Auth: UNAUTHORIZED");
         vm.prank(testMinter);
-        bsmTester.setMintingCap(0);
+        rateLimitingConstraint.setMintingCap(address(bsmTester), RateLimitingConstraint.MintingCap(0, 0, false));
     }
 
     function testUpdateAssetVault() public {
@@ -55,16 +55,16 @@ contract GovernanceTests is BSMTestBase {
 
         vm.expectRevert("Auth: UNAUTHORIZED");
         vm.prank(testMinter);
-        oracleModule.setMinPrice(bps);
+        oraclePriceConstraint.setMinPrice(bps);
 
         vm.expectRevert();
         vm.prank(techOpsMultisig);
-        oracleModule.setMinPrice(bps + 1);
+        oraclePriceConstraint.setMinPrice(bps + 1);
     }
 
     function testSetOracleFreshness() public {
         vm.expectRevert("Auth: UNAUTHORIZED");
         vm.prank(testMinter);
-        oracleModule.setOracleFreshness(1000);
+        oraclePriceConstraint.setOracleFreshness(1000);
     }
 }

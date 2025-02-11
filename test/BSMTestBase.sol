@@ -8,7 +8,8 @@ import {MockAssetOracle} from "./mocks/MockAssetOracle.sol";
 import {MockActivePool} from "./mocks/MockActivePool.sol";
 import "../src/Dependencies/Governor.sol";
 import "../src/EbtcBSM.sol";
-import "../src/OracleModule.sol";
+import "../src/OraclePriceConstraint.sol";
+import "../src/RateLimitingConstraint.sol";
 import "../src/ERC4626AssetVault.sol";
 
 contract BSMTestBase is Test {
@@ -18,7 +19,8 @@ contract BSMTestBase is Test {
     ERC4626AssetVault internal assetVault;
     MockAssetOracle internal mockAssetOracle;
     MockActivePool internal mockActivePool;
-    OracleModule internal oracleModule;
+    OraclePriceConstraint internal oraclePriceConstraint;
+    RateLimitingConstraint internal rateLimitingConstraint;
     EbtcBSM internal bsmTester;
     address internal testMinter;
     address internal testBuyer;
@@ -37,8 +39,12 @@ contract BSMTestBase is Test {
         mockActivePool = new MockActivePool(mockEbtcToken);
         externalVault = new ERC4626Mock(address(mockAssetToken));
         mockAssetOracle = new MockAssetOracle(18);
-        oracleModule = new OracleModule(
+        oraclePriceConstraint = new OraclePriceConstraint(
             address(mockAssetOracle),
+            address(authority)
+        );
+        rateLimitingConstraint = new RateLimitingConstraint(
+            address(mockActivePool),
             address(authority)
         );
         testMinter = vm.addr(0x11111);
@@ -48,9 +54,9 @@ contract BSMTestBase is Test {
 
         bsmTester = new EbtcBSM(
             address(mockAssetToken),
-            address(oracleModule),
+            address(oraclePriceConstraint),
+            address(rateLimitingConstraint),
             address(mockEbtcToken),
-            address(mockActivePool),
             address(defaultFeeRecipient),
             address(authority)
         );
@@ -77,7 +83,7 @@ contract BSMTestBase is Test {
         mockEbtcToken.approve(address(bsmTester), type(uint256).max);
         vm.stopPrank();
         mockAssetToken.mint(testAuthorizedUser, 10e18);
-        mockEbtcToken.mint(testAuthorizedUser,10e18);
+        mockEbtcToken.mint(testAuthorizedUser, 10e18);
 
         vm.prank(testBuyer);
         mockEbtcToken.mint(testBuyer, 10e18);
@@ -88,12 +94,6 @@ contract BSMTestBase is Test {
         authority.setUserRole(address(bsmTester), 2, true);
         authority.setRoleName(15, "BSM: Governance");
         authority.setRoleName(16, "BSM: AuthorizedUser");
-        authority.setRoleCapability(
-            15,
-            address(bsmTester),
-            bsmTester.setMintingCap.selector,
-            true
-        );
         authority.setRoleCapability(
             15,
             address(bsmTester),
@@ -127,7 +127,13 @@ contract BSMTestBase is Test {
         authority.setRoleCapability(
             15,
             address(bsmTester),
-            bsmTester.setOracleModule.selector,
+            bsmTester.setOraclePriceConstraint.selector,
+            true
+        );
+        authority.setRoleCapability(
+            15,
+            address(bsmTester),
+            bsmTester.setRateLimitingConstraint.selector,
             true
         );
         authority.setRoleCapability(
@@ -150,8 +156,14 @@ contract BSMTestBase is Test {
         );
         authority.setRoleCapability(
             15,
-            address(oracleModule),
-            oracleModule.setMinPrice.selector,
+            address(oraclePriceConstraint),
+            oraclePriceConstraint.setMinPrice.selector,
+            true
+        );
+        authority.setRoleCapability(
+            15,
+            address(rateLimitingConstraint),
+            rateLimitingConstraint.setMintingCap.selector,
             true
         );
         // Give ebtc tech ops role 15
@@ -175,7 +187,7 @@ contract BSMTestBase is Test {
         vm.startPrank(techOpsMultisig);
         bsmTester.updateAssetVault(address(assetVault));
         // Set minting cap to 10%
-        bsmTester.setMintingCap(1000);
+        rateLimitingConstraint.setMintingCap(address(bsmTester), RateLimitingConstraint.MintingCap(1000, 0, false));
         vm.stopPrank();
     }
 }
