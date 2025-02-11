@@ -11,7 +11,7 @@ import {IMintingConstraint} from "./Dependencies/IMintingConstraint.sol";
 import {IAssetVault} from "./Dependencies/IAssetVault.sol";
 import {BaseAssetVault} from "./BaseAssetVault.sol";
 
-contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner, Initializable {
+contract EbtcBSM is IEbtcBSM, Pausable, Initializable, AuthNoOwner {
     using SafeERC20 for IERC20;
 
     uint256 public constant BPS = 10000;
