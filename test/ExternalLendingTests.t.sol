@@ -12,6 +12,11 @@ contract ExternalLendingTests is BSMTestBase {
     uint256 constant ASSET_AMOUNT = 1e18;
     uint256 shares;
 
+    modifier prankTechOpsMultisig() {
+        vm.prank(techOpsMultisig);
+        _;
+    }
+
     function setUp() public virtual override {
         super.setUp();
 
@@ -53,25 +58,21 @@ contract ExternalLendingTests is BSMTestBase {
     }
     
     function testBasicExternalDeposit() public {
-        vm.startPrank(techOpsMultisig);
-
         uint256 beforeExternalVaultBalance = mockAssetToken.balanceOf(address(newExternalVault));
         uint256 beforeBalance = mockAssetToken.balanceOf(techOpsMultisig);
         uint256 beforeShares = newExternalVault.balanceOf(address(newAssetVault));
 
-        bsmTester.sellAsset(ASSET_AMOUNT, address(this));
+        sellAsset();
 
         uint256 beforeDepositAmount = newAssetVault.depositAmount();
         uint256 beforeTotalBalance = newAssetVault.totalBalance();
-        newAssetVault.depositToExternalVault(ASSET_AMOUNT, shares);
+        depositToExternalVault(ASSET_AMOUNT, shares);
 
         uint256 afterExternalVaultBalance = mockAssetToken.balanceOf(address(newExternalVault));
         uint256 afterBalance = mockAssetToken.balanceOf(techOpsMultisig);
         uint256 afterShares = newExternalVault.balanceOf(address(newAssetVault));
         uint256 afterDepositAmount = newAssetVault.depositAmount();
         uint256 afterTotalBalance = newAssetVault.totalBalance();
-
-        vm.stopPrank();
 
         assertGt(afterExternalVaultBalance, beforeExternalVaultBalance);
         assertGt(beforeBalance, afterBalance);
@@ -82,10 +83,8 @@ contract ExternalLendingTests is BSMTestBase {
     }
     
     function testBasicExternalRedeem() public {
-        vm.startPrank(techOpsMultisig);
-        bsmTester.sellAsset(ASSET_AMOUNT, address(this));
-
-        newAssetVault.depositToExternalVault(ASSET_AMOUNT, shares);
+        sellAsset();
+        depositToExternalVault(ASSET_AMOUNT, shares);
 
         uint256 beforeExternalVaultBalance = mockAssetToken.balanceOf(address(newExternalVault));
         uint256 beforeBalance = mockAssetToken.balanceOf(techOpsMultisig);
@@ -94,8 +93,7 @@ contract ExternalLendingTests is BSMTestBase {
         uint256 assets = newExternalVault.previewRedeem(shares);
         uint256 beforeTotalBalance = newAssetVault.totalBalance();
 
-        newAssetVault.redeemFromExternalVault(shares, assets);
-        vm.stopPrank();
+        redeemFromExternalVault(shares, assets);
 
         uint256 afterExternalVaultBalance = mockAssetToken.balanceOf(address(newExternalVault));
         uint256 afterBalance = mockAssetToken.balanceOf(techOpsMultisig);
@@ -112,18 +110,15 @@ contract ExternalLendingTests is BSMTestBase {
     }
 
     function testPartialExternalRedeem() public {
-        vm.startPrank(techOpsMultisig);
-        bsmTester.sellAsset(ASSET_AMOUNT, address(this));
-
-        newAssetVault.depositToExternalVault(ASSET_AMOUNT, shares);
+        sellAsset();
+        depositToExternalVault(ASSET_AMOUNT, shares);
 
         uint256 beforeExternalVaultBalance = mockAssetToken.balanceOf(address(newExternalVault));
         uint256 beforeBalance = mockAssetToken.balanceOf(techOpsMultisig);
         uint256 beforeShares = newExternalVault.balanceOf(address(newAssetVault));
 
         uint256 assets = newExternalVault.previewRedeem(shares);
-        newAssetVault.redeemFromExternalVault(shares / 2, assets / 2);
-        vm.stopPrank();
+        redeemFromExternalVault(shares / 2, assets / 2);
 
         uint256 afterExternalVaultBalance = mockAssetToken.balanceOf(address(newExternalVault));
         uint256 afterBalance = mockAssetToken.balanceOf(techOpsMultisig);
@@ -138,36 +133,43 @@ contract ExternalLendingTests is BSMTestBase {
         vm.expectRevert("Auth: UNAUTHORIZED");
         newAssetVault.redeemFromExternalVault(1e18, 1);
 
-        vm.startPrank(techOpsMultisig);
         // Redeem before making deposit
         vm.expectRevert();
-        newAssetVault.redeemFromExternalVault(1e18, 1);
+        redeemFromExternalVault(1e18, 1);
 
-        bsmTester.sellAsset(ASSET_AMOUNT, address(this));
+        sellAsset();
 
-        newAssetVault.depositToExternalVault(ASSET_AMOUNT, shares);
+        depositToExternalVault(ASSET_AMOUNT, shares);
 
         uint256 assets = newExternalVault.previewRedeem(shares);
         vm.expectRevert(abi.encodeWithSelector(ERC4626AssetVault.TooFewAssetsReceived.selector, assets + 1, assets));
-        newAssetVault.redeemFromExternalVault(shares, assets + 1);
-        vm.stopPrank();
+        redeemFromExternalVault(shares, assets + 1);
     }
 
     function testInvalidExternalDeposit() public {
         vm.expectRevert("Auth: UNAUTHORIZED");
         newAssetVault.depositToExternalVault(1e18, 1);
         
-        vm.startPrank(techOpsMultisig);
         //invalid asset amount sent
         vm.expectRevert(abi.encodeWithSelector(ERC4626AssetVault.TooFewSharesReceived.selector, 1, 0));
-        newAssetVault.depositToExternalVault(0, 1);
+        depositToExternalVault(0, 1);
         
         //invalid expected shares amount
-        bsmTester.sellAsset(ASSET_AMOUNT, address(this));
+        sellAsset();
         vm.expectRevert(abi.encodeWithSelector(ERC4626AssetVault.TooFewSharesReceived.selector, shares + 1, shares));
-        newAssetVault.depositToExternalVault(ASSET_AMOUNT, shares + 1);
-        
-        vm.stopPrank();
+        depositToExternalVault(ASSET_AMOUNT, shares + 1);
+    }
+
+    function sellAsset() internal prankTechOpsMultisig {
+        bsmTester.sellAsset(ASSET_AMOUNT, address(this));
+    }
+
+    function depositToExternalVault(uint256 _assetsToDeposit, uint256 _minShares) internal prankTechOpsMultisig {
+        newAssetVault.depositToExternalVault(_assetsToDeposit, _minShares);
+    }
+
+    function redeemFromExternalVault(uint256 _shares, uint256 _assets) internal prankTechOpsMultisig {
+        newAssetVault.redeemFromExternalVault(_shares, _assets);
     }
 
 }
