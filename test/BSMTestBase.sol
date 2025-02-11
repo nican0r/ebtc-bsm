@@ -192,4 +192,9 @@ contract BSMTestBase is Test {
         rateLimitingConstraint.setMintingCap(address(bsmTester), RateLimitingConstraint.MintingCap(1000, 0, false));
         vm.stopPrank();
     }
+
+    function testBsmCannotBeReinitialize() public {
+        vm.expectRevert(abi.encodeWithSelector(Initializable.InvalidInitialization.selector));
+        bsmTester.initialize(address(assetVault));
+    }
 }
