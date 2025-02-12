@@ -3,6 +3,7 @@ pragma solidity ^0.8.25;
 
 import {AuthNoOwner} from "./Dependencies/AuthNoOwner.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IEbtcToken} from "./Dependencies/IEbtcToken.sol";
 import {IEbtcBSM} from "./Dependencies/IEbtcBSM.sol";
@@ -10,7 +11,7 @@ import {IMintingConstraint} from "./Dependencies/IMintingConstraint.sol";
 import {IAssetVault} from "./Dependencies/IAssetVault.sol";
 import {BaseAssetVault} from "./BaseAssetVault.sol";
 
-contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
+contract EbtcBSM is IEbtcBSM, Pausable, Initializable, AuthNoOwner {
     using SafeERC20 for IERC20;
 
     uint256 public constant BPS = 10000;
@@ -19,7 +20,6 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
     // Immutables
     IERC20 public immutable ASSET_TOKEN;
     IEbtcToken public immutable EBTC_TOKEN;
-    address public immutable FEE_RECIPIENT;
 
     uint256 public feeToSellBPS;
     uint256 public feeToBuyBPS;
@@ -36,7 +36,6 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
      * @param _oraclePriceConstraint Address of the oracle price constraint
      * @param _rateLimitingConstraint address of the rate limiting constraint
      * @param _ebtcToken Address of the eBTC token
-     * @param _feeRecipient Address to receive fees
      * @param _governance Address of the eBTC governor
      */
     constructor(
@@ -44,34 +43,25 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
         address _oraclePriceConstraint,
         address _rateLimitingConstraint,
         address _ebtcToken,
-        address _feeRecipient,
         address _governance
     ) {
         require(_assetToken != address(0));
         require(_oraclePriceConstraint != address(0));
         require(_rateLimitingConstraint != address(0));
         require(_ebtcToken != address(0));
-        require(_feeRecipient != address(0));
         require(_governance != address(0));
 
         ASSET_TOKEN = IERC20(_assetToken);
         oraclePriceConstraint = IMintingConstraint(_oraclePriceConstraint);
         rateLimitingConstraint = IMintingConstraint(_rateLimitingConstraint);
         EBTC_TOKEN = IEbtcToken(_ebtcToken);
-        FEE_RECIPIENT = _feeRecipient;
         _initializeAuthority(_governance);
-
-        // potentially remove this
-        assetVault = IAssetVault(
-            address(
-                new BaseAssetVault(
-                    _assetToken,
-                    address(this),
-                    _governance,
-                    FEE_RECIPIENT
-                )
-            )
-        );
+    }
+    
+    // This function will be invoked only once within the same transaction as the deployment of this contract, 
+    // thereby preventing any other user from executing this function.
+    function initialize(address _assetVault) initializer external {
+       assetVault = IAssetVault(_assetVault);
     }
 
     function _feeToBuy(uint256 _amount) private view returns (uint256) {

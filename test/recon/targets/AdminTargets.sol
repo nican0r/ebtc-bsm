@@ -123,7 +123,7 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
             address(mockAssetToken),
             address(bsmTester),
             address(new MockAlwaysTrueAuthority()),
-            bsmTester.FEE_RECIPIENT()
+            assetVault.FEE_RECIPIENT()
         );
 
         vm.prank(address(techOpsMultisig));

@@ -57,22 +57,23 @@ contract BSMTestBase is Test {
             address(oraclePriceConstraint),
             address(rateLimitingConstraint),
             address(mockEbtcToken),
-            address(defaultFeeRecipient),
             address(authority)
         );
-
-        // create initial ebtc supply
-        mockEbtcToken.mint(defaultGovernance, 50e18);
-        mockAssetOracle.setPrice(1e18);
-        mockAssetOracle.setUpdateTime(block.timestamp);
 
         assetVault = new ERC4626AssetVault(
             address(externalVault),
             address(mockAssetToken),
             address(bsmTester),
             address(authority),
-            bsmTester.FEE_RECIPIENT()
+            address(defaultFeeRecipient)
         );
+        
+        bsmTester.initialize(address(assetVault));
+
+        // create initial ebtc supply
+        mockEbtcToken.mint(defaultGovernance, 50e18);
+        mockAssetOracle.setPrice(1e18);
+        mockAssetOracle.setUpdateTime(block.timestamp);
 
         vm.prank(testMinter);
         mockAssetToken.approve(address(bsmTester), type(uint256).max);
@@ -189,5 +190,10 @@ contract BSMTestBase is Test {
         // Set minting cap to 10%
         rateLimitingConstraint.setMintingCap(address(bsmTester), RateLimitingConstraint.MintingCap(1000, 0, false));
         vm.stopPrank();
+    }
+
+    function testBsmCannotBeReinitialize() public {
+        vm.expectRevert(abi.encodeWithSelector(Initializable.InvalidInitialization.selector));
+        bsmTester.initialize(address(assetVault));
     }
 }
