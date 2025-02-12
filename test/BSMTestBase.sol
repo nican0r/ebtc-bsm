@@ -30,6 +30,11 @@ contract BSMTestBase is Test {
     address internal techOpsMultisig;
     address internal testAuthorizedUser;
 
+    /**
+     * @notice Pranks the following call as defaultGovernance
+     * @dev Hevm does not allow the usage of startPrank, this was created 
+     * to be used in the wrapper methods that need to be called by this user
+     */
     modifier prankDefaultGovernance() {
         vm.prank(defaultGovernance);
         _;

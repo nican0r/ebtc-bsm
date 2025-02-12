@@ -12,6 +12,11 @@ contract ExternalLendingTests is BSMTestBase {
     uint256 constant ASSET_AMOUNT = 1e18;
     uint256 shares;
 
+    /**
+     * @notice Pranks the following call as techOpsMultisig
+     * @dev Hevm does not allow the usage of startPrank, this was created 
+     * to be used in the wrapper methods that need to be called by this user
+     */
     modifier prankTechOpsMultisig() {
         vm.prank(techOpsMultisig);
         _;
