@@ -2,6 +2,7 @@
 pragma solidity ^0.8.25;
 
 import "./BSMTestBase.sol";
+import "../src/RateLimitingConstraint.sol";
 
 contract GovernanceTests is BSMTestBase {
 

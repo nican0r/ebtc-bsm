@@ -98,23 +98,6 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
         bsmTester.unpause();
     }
 
-    // // Custom handler
-    // TODO: Somehow this creates a stack overflow????
-    // function bsmTester_updateAssetVault() public updateGhosts {
-    //     // Replace
-    //     vm.prank(techOpsMultisig);
-    //     assetVault = new ERC4626AssetVault(
-    //         address(externalVault),
-    //         address(mockAssetToken),
-    //         address(bsmTester),
-    //         address(new MockAlwaysTrueAuthority()),
-    //         bsmTester.FEE_RECIPIENT()
-    //     );
-
-    //     vm.prank(address(techOpsMultisig));
-    //     bsmTester.updateAssetVault(address(assetVault));
-    // }
-
     // Custom handler
     function bsmTester_updateAssetVault() public updateGhosts {
         // Replace
@@ -131,7 +114,8 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
     }
     
     // Stateless test
-    function doomsday_bsmTester_updateAssetVault_always_works() public {
+    /// @dev maybe the name is too long for medusa?
+ /*   function doomsday_bsmTester_updateAssetVault_always_works() public {
         try this.bsmTester_updateAssetVault() {
 
         } catch {
@@ -139,5 +123,15 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
         }
 
         revert("stateless");
-    }
+    }  */
+
+    function bsmTester_updateAssetVault_always_works() public {
+        try this.bsmTester_updateAssetVault() {
+
+        } catch {
+            t(false, "doomsday_bsmTester_updateAssetVault_always_works");
+        }
+
+        revert("stateless");
+    } 
 }
