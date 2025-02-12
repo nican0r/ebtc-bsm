@@ -20,11 +20,11 @@ abstract contract TargetFunctions is AdminTargets, InlinedTests, ManagersTargets
     }
 
     // Donations directly to the underlying vault
-    function externalVault_mint(uint256 _amount) public asActor {
+    function externalVault_mint(uint256 _amount) public updateGhosts asActor {
         externalVault.deposit(_amount, _getActor());
     }
 
-    function externalVault_withdraw(uint256 _amount) public asActor{
-        externalVault.withdraw(_amount, _getActor());
+    function externalVault_withdraw(uint256 _amount) public updateGhosts asActor{
+        externalVault.withdraw(_amount, _getActor(), _getActor());
     }
 }

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {BaseTargetFunctions} from "@chimera/BaseTargetFunctions.sol";
-import {BeforeAfter} from "../BeforeAfter.sol";
+import {OpType, BeforeAfter} from "../BeforeAfter.sol";
 import {Properties} from "../Properties.sol";
 import {vm} from "@chimera/Hevm.sol";
 
@@ -42,11 +42,12 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
         assetVault.redeemFromExternalVault(sharesToRedeem, expectedAssets);
     }
 
+    // @audit doesn't seem like this would ever successfully be called because the BSM is the only one that can call it
     function assetVault_setDepositAmount(uint256 amount) public updateGhosts asTechops {
         assetVault.setDepositAmount(amount);
     }
 
-    function assetVault_claimProfit() public updateGhosts asTechops {
+    function assetVault_claimProfit() public updateGhostsWithType(OpType.CLAIM) asTechops {
         assetVault.claimProfit();
     }
 
