@@ -27,7 +27,6 @@ contract BSMDeployer {
             address(_oracleModule),
             address(_ebtcToken),
             address(_activePool),
-            address(_feeRecipient),
             address(_governance)
         );
 
@@ -36,7 +35,7 @@ contract BSMDeployer {
             address(_assetToken),
             address(bsm),
             address(_governance),
-            bsm.FEE_RECIPIENT()
+            address(_feeRecipient)
         );
         
         bsm.initialize(address(assetVault));

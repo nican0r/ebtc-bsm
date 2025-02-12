@@ -20,7 +20,6 @@ contract EbtcBSM is IEbtcBSM, Pausable, Initializable, AuthNoOwner {
     // Immutables
     IERC20 public immutable ASSET_TOKEN;
     IEbtcToken public immutable EBTC_TOKEN;
-    address public immutable FEE_RECIPIENT;
 
     uint256 public feeToSellBPS;
     uint256 public feeToBuyBPS;
@@ -37,7 +36,6 @@ contract EbtcBSM is IEbtcBSM, Pausable, Initializable, AuthNoOwner {
      * @param _oraclePriceConstraint Address of the oracle price constraint
      * @param _rateLimitingConstraint address of the rate limiting constraint
      * @param _ebtcToken Address of the eBTC token
-     * @param _feeRecipient Address to receive fees
      * @param _governance Address of the eBTC governor
      */
     constructor(
@@ -45,21 +43,18 @@ contract EbtcBSM is IEbtcBSM, Pausable, Initializable, AuthNoOwner {
         address _oraclePriceConstraint,
         address _rateLimitingConstraint,
         address _ebtcToken,
-        address _feeRecipient,
         address _governance
     ) {
         require(_assetToken != address(0));
         require(_oraclePriceConstraint != address(0));
         require(_rateLimitingConstraint != address(0));
         require(_ebtcToken != address(0));
-        require(_feeRecipient != address(0));
         require(_governance != address(0));
 
         ASSET_TOKEN = IERC20(_assetToken);
         oraclePriceConstraint = IMintingConstraint(_oraclePriceConstraint);
         rateLimitingConstraint = IMintingConstraint(_rateLimitingConstraint);
         EBTC_TOKEN = IEbtcToken(_ebtcToken);
-        FEE_RECIPIENT = _feeRecipient;
         _initializeAuthority(_governance);
     }
     

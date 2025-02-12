@@ -21,7 +21,7 @@ contract ExternalLendingTests is BSMTestBase {
             address(bsmTester.ASSET_TOKEN()),
             address(bsmTester),
             address(bsmTester.authority()),
-            address(bsmTester.FEE_RECIPIENT())
+            address(assetVault.FEE_RECIPIENT())
         );
         shares = newExternalVault.previewDeposit(ASSET_AMOUNT);
         vm.prank(techOpsMultisig);

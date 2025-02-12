@@ -57,7 +57,6 @@ contract BSMTestBase is Test {
             address(oraclePriceConstraint),
             address(rateLimitingConstraint),
             address(mockEbtcToken),
-            address(defaultFeeRecipient),
             address(authority)
         );
 
@@ -66,7 +65,7 @@ contract BSMTestBase is Test {
             address(mockAssetToken),
             address(bsmTester),
             address(authority),
-            bsmTester.FEE_RECIPIENT()
+            address(defaultFeeRecipient)
         );
         
         bsmTester.initialize(address(assetVault));
