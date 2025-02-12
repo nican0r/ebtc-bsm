@@ -18,4 +18,13 @@ abstract contract TargetFunctions is AdminTargets, InlinedTests, ManagersTargets
     function bsmTester_buyEbtcWithAsset(uint256 _assetAmountIn) public updateGhosts {
         bsmTester.buyEbtcWithAsset(_assetAmountIn);
     }
+
+    // Donations directly to the underlying vault
+    function externalVault_mint(uint256 _amount) public asActor {
+        externalVault.deposit(_amount, _getActor());
+    }
+
+    function externalVault_withdraw(uint256 _amount) public asActor{
+        externalVault.withdraw(_amount, _getActor());
+    }
 }
