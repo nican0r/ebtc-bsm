@@ -62,8 +62,24 @@ contract MigrateAssetVaultTest is BSMTestBase {
     }
 
     function testMigrationWithProfit() public {
-        // increase profit
-        // test _claimProfit
+        // make profit
+        vm.prank(techOpsMultisig);
+        bsmTester.setFeeToSell(100);
+
+        vm.prank(testMinter);
+        assertEq(bsmTester.sellAsset(1.01e18, testMinter), 1e18);
+
+        uint256 profit = escrow.feeProfit();
+        uint256 prevFeeRecipientBalance = escrow.ASSET_TOKEN().balanceOf(escrow.FEE_RECIPIENT());
+        // migrate escrow
+        vm.prank(techOpsMultisig);
+        bsmTester.updateEscrow(address(newEscrow));
+        uint256 feeRecipientBalance = escrow.ASSET_TOKEN().balanceOf(escrow.FEE_RECIPIENT());
+        
+        assertEq(escrow.totalBalance(), escrow.totalAssetsDeposited());
+        assertEq(escrow.feeProfit(), 0);
+        assertEq(feeRecipientBalance, profit);
+        assertGt(feeRecipientBalance, prevFeeRecipientBalance);
     }
 
     function testRevertScenarios() public {
