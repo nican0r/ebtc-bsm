@@ -119,6 +119,8 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
 
     // Custom handler
     function bsmTester_updateAssetVault() public updateGhostsWithType(OpType.MIGRATE) {
+        uint256 feeProfitBefore = assetVault.feeProfit();
+
         // Replace
         assetVault = new ERC4626AssetVault(
             address(externalVault),
@@ -130,6 +132,13 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
 
         vm.prank(address(techOpsMultisig));
         bsmTester.updateAssetVault(address(assetVault));
+
+        // if the feeProfitBefore > 0, the new vault should have its totalBalance decreased by the feeProfitBefore
+        if (feeProfitBefore > 0) {
+            eq(assetVault.totalBalance(), _before.assetVault.totalBalance() - feeProfitBefore, "Asset Vault balance decreases by feeProfitBefore");
+        } else {
+            eq(assetVault.totalBalance(), _before.assetVault.totalBalance(), "Asset Vault balance stays the same in no profit");
+        }
     }
     
     // Stateless test
