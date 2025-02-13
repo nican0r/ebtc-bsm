@@ -7,13 +7,15 @@ import "forge-std/console2.sol";
 enum OpType {
     GENERIC,
     CLAIM, // This op resets the fee
-    MIGRATE // This op migrates the vault and resets the fee
+    MIGRATE, // This op migrates the vault and resets the fee
+    BUY_ASSET_WITH_EBTC // This op buys underlying asset with eBTC
 }
 
 // ghost variables for tracking state variable values before and after function calls
 abstract contract BeforeAfter is Setup {
     struct Vars {
         uint256 feesProfit;
+        uint256 totalBalance;
     }
 
     Vars internal _before;
@@ -36,9 +38,11 @@ abstract contract BeforeAfter is Setup {
 
     function __before() internal {
         _before.feesProfit = assetVault.feeProfit();
+        _before.totalBalance = assetVault.totalBalance();
     }
 
     function __after() internal {
         _after.feesProfit = assetVault.feeProfit();
+        _after.totalBalance = assetVault.totalBalance();
     }
 }

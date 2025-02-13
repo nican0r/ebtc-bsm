@@ -137,9 +137,9 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
 
         // if the feeProfitBefore > 0, the new vault should have its totalBalance decreased by the feeProfitBefore
         if (feeProfitBefore > 0) {
-            eq(assetVault.totalBalance(), _before.assetVault.totalBalance() - feeProfitBefore, "Asset Vault balance decreases by feeProfitBefore");
+            eq(assetVault.totalBalance(), _before.totalBalance - feeProfitBefore, "Asset Vault balance decreases by feeProfitBefore");
         } else {
-            eq(assetVault.totalBalance(), _before.assetVault.totalBalance(), "Asset Vault balance stays the same in no profit");
+            eq(assetVault.totalBalance(), _before.totalBalance, "Asset Vault balance stays the same in no profit");
         }
     }
     

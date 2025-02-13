@@ -19,4 +19,10 @@ abstract contract Properties is BeforeAfter, Asserts {
             gte(_after.feesProfit, _before.feesProfit, "Profit should only increase");
         }
     }
+
+    function property_assets_are_not_lost() public {
+        if(currentOperation != OpType.MIGRATE && currentOperation != OpType.CLAIM && currentOperation != OpType.BUY_ASSET_WITH_EBTC) {
+            eq(_before.totalBalance, _after.totalBalance, "Assets should not be lost");
+        }
+    }
 }
