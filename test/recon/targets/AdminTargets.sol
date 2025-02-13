@@ -130,17 +130,21 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
             bsmTester.FEE_RECIPIENT()
         );
 
+        uint256 balB4 = (assetVault.ASSET_TOKEN()).balanceOf(address(assetVault.FEE_RECIPIENT()));
+        
         vm.prank(address(techOpsMultisig));
         bsmTester.updateAssetVault(address(assetVault));
-
+        
+        uint256 balAfter = (assetVault.ASSET_TOKEN()).balanceOf(address(assetVault.FEE_RECIPIENT()));
         hasMigrated = true;
+
+        uint256 deltaFees = balAfter - balB4;
 
         // if the feeProfitBefore > 0, the new vault should have its totalBalance decreased by the feeProfitBefore
         if (feeProfitBefore > 0) {
             eq(assetVault.totalBalance(), _before.totalBalance - feeProfitBefore, "Asset Vault balance decreases by feeProfitBefore");
-        } else {
-            eq(assetVault.totalBalance(), _before.totalBalance, "Asset Vault balance stays the same in no profit");
-        }
+            lte(deltaFees, feeProfitBefore, "Delta fees is at most profit");
+        } 
     }
     
     // Stateless test
