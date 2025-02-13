@@ -21,6 +21,9 @@ contract MigrateAssetVaultTest is BSMTestBase {
             address(bsmTester.authority()),
             address(escrow.FEE_RECIPIENT())
         );
+        mockAssetToken.mint(techOpsMultisig, 10e18);
+        vm.prank(techOpsMultisig);
+        mockAssetToken.approve(address(bsmTester), type(uint256).max);
     }
 
     function testBasicScenario() public {
@@ -46,6 +49,7 @@ contract MigrateAssetVaultTest is BSMTestBase {
         uint256 prevTotalDeposit = escrow.totalAssetsDeposited();
         uint256 prevBalance = escrow.ASSET_TOKEN().balanceOf(address(escrow));
         assertEq(prevTotalDeposit, endAssetAmount);
+        assertGt(prevBalance, 0);
 
         vm.prank(techOpsMultisig);
         bsmTester.updateEscrow(address(newEscrow));
@@ -94,11 +98,36 @@ contract MigrateAssetVaultTest is BSMTestBase {
         vm.prank(techOpsMultisig);
         vm.expectRevert();
         bsmTester.updateEscrow(address(0));
-
-        //TODO test require(_totalBalance() >= totalAssetsDeposited); from claimProfit
     }
 
     function testMigrationWithExtLending() public {
+        uint256 assetAmount = 2e18;
+        // operations including selling, and buying assets, as well as external lending
+        vm.prank(techOpsMultisig);
+        bsmTester.sellAsset(assetAmount, address(this));
 
+        uint256 shares = externalVault.previewDeposit(assetAmount);
+        vm.prank(techOpsMultisig);
+        escrow.depositToExternalVault(assetAmount, shares);
+
+        vm.prank(testBuyer);
+        bsmTester.buyAsset(assetAmount / 2, testBuyer);
+
+        assertGt(escrow.totalAssetsDeposited(), 0);
+        assertGt(externalVault.balanceOf(address(escrow)), 0);
+        
+        vm.prank(techOpsMultisig);
+        escrow.redeemFromExternalVault(shares / 2 , assetAmount / 2);
+        // Migrate escrow
+        uint256 totalAssetsDeposited = escrow.totalAssetsDeposited();
+        uint256 escrowBalance = externalVault.balanceOf(address(escrow));
+        vm.prank(techOpsMultisig);
+        bsmTester.updateEscrow(address(newEscrow));
+        
+        assertEq(escrow.totalAssetsDeposited(), 0);
+        assertEq(newEscrow.totalAssetsDeposited(), totalAssetsDeposited);
+        assertEq(externalVault.balanceOf(address(escrow)), 0);
+        assertEq(externalVault.balanceOf(address(newEscrow)), escrowBalance);
     }
+    //TODO claim profit not from fee but from price change
 }
