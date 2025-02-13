@@ -28,7 +28,7 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
 // forge test --match-test test_doomsday_bsmTester_updateEscrow_always_works_0 -vvv 
 function test_doomsday_bsmTester_updateEscrow_always_works_0() public {
 
-    bsmTester_buyEbtcWithAsset(3);
+    bsmTester_sellAsset(3);
 
     switch_asset(1);
 
@@ -46,7 +46,7 @@ function test_doomsday_bsmTester_updateEscrow_always_works_0() public {
  // forge test --match-test test_property_accounting_is_sound_0 -vvv 
 function test_property_accounting_is_sound_0() public {
 
-    bsmTester_buyEbtcWithAsset(1);
+    bsmTester_sellAsset(1);
 
     switch_asset(1);
 
@@ -61,7 +61,7 @@ function test_property_accounting_is_sound_0() public {
 // forge test --match-test test_inlined_withdrawProfitTest_1 -vvv 
 function test_inlined_withdrawProfitTest_1() public {
 
-    bsmTester_buyEbtcWithAsset(1);
+    bsmTester_sellAsset(1);
 
     escrow_depositToExternalVault_rekt(1,0);
 

@@ -11,11 +11,11 @@ import {InlinedTests} from "./targets/InlinedTests.sol";
 import {ManagersTargets} from "./targets/ManagersTargets.sol";
 
 abstract contract TargetFunctions is AdminTargets, InlinedTests, ManagersTargets {
-    function bsmTester_buyAssetWithEbtc(uint256 _ebtcAmountIn) public updateGhosts {
-        bsmTester.buyAsset(_ebtcAmountIn, address(this));
+    function bsmTester_buyAsset(uint256 _ebtcAmountIn) public updateGhosts asActor {
+        bsmTester.buyAsset(_ebtcAmountIn, _getActor());
     }
 
-    function bsmTester_buyEbtcWithAsset(uint256 _assetAmountIn) public updateGhosts {
-        bsmTester.sellAsset(_assetAmountIn, address(this));
+    function bsmTester_sellAsset(uint256 _assetAmountIn) public updateGhosts asActor {
+        bsmTester.sellAsset(_assetAmountIn, _getActor());
     }
 }
