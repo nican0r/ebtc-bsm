@@ -118,7 +118,7 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
     // }
 
     // Custom handler
-    function bsmTester_updateAssetVault() public updateGhosts {
+    function bsmTester_updateAssetVault() public updateGhostsWithType(OpType.MIGRATE) {
         // Replace
         assetVault = new ERC4626AssetVault(
             address(externalVault),
