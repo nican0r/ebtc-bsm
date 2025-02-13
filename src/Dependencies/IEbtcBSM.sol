@@ -2,7 +2,7 @@
 pragma solidity ^0.8.25;
 
 interface IEbtcBSM {
-    event AssetVaultUpdated(address indexed oldVault, address indexed newVault);
+    event EscrowUpdated(address indexed oldVault, address indexed newVault);
     event FeeToSellUpdated(uint256 oldFee, uint256 newFee);
     event FeeToBuyUpdated(uint256 oldFee, uint256 newFee);
     event AssetSold(uint256 assetAmountIn, uint256 ebtcAmountOut, uint256 feeAmount);

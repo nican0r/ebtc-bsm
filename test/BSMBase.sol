@@ -5,21 +5,21 @@ import "forge-std/Test.sol";
 import "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import "@openzeppelin/contracts/mocks/token/ERC4626Mock.sol";
 import {MockAssetOracle} from "./mocks/MockAssetOracle.sol";
-import {MockActivePool} from "./mocks/MockActivePool.sol";
+import {MockActivePoolObserver} from "./mocks/MockActivePoolObserver.sol";
 import "../src/Dependencies/Governor.sol";
 import "../src/EbtcBSM.sol";
 import "../src/OraclePriceConstraint.sol";
 import "../src/RateLimitingConstraint.sol";
-import "../src/ERC4626AssetVault.sol";
+import "../src/ERC4626Escrow.sol";
 import {vm} from "@chimera/Hevm.sol";
 
 contract BSMBase {
     ERC20Mock internal mockAssetToken;
     ERC20Mock internal mockEbtcToken;
     ERC4626Mock internal externalVault;
-    ERC4626AssetVault internal assetVault;
+    ERC4626Escrow internal escrow;
     MockAssetOracle internal mockAssetOracle;
-    MockActivePool internal mockActivePool;
+    MockActivePoolObserver internal mockActivePoolObserver;
     OraclePriceConstraint internal oraclePriceConstraint;
     RateLimitingConstraint internal rateLimitingConstraint;
     EbtcBSM internal bsmTester;
@@ -47,7 +47,7 @@ contract BSMBase {
         authority = new Governor(defaultGovernance);
         mockAssetToken = new ERC20Mock();
         mockEbtcToken = new ERC20Mock();
-        mockActivePool = new MockActivePool(mockEbtcToken);
+        mockActivePoolObserver = new MockActivePoolObserver(mockEbtcToken);
         externalVault = new ERC4626Mock(address(mockAssetToken));
         mockAssetOracle = new MockAssetOracle(18);
         oraclePriceConstraint = new OraclePriceConstraint(
@@ -55,7 +55,7 @@ contract BSMBase {
             address(authority)
         );
         rateLimitingConstraint = new RateLimitingConstraint(
-            address(mockActivePool),
+            address(mockActivePoolObserver),
             address(authority)
         );
         testMinter = vm.addr(0x11111);
@@ -71,7 +71,7 @@ contract BSMBase {
             address(authority)
         );
 
-        assetVault = new ERC4626AssetVault(
+        escrow = new ERC4626Escrow(
             address(externalVault),
             address(mockAssetToken),
             address(bsmTester),
@@ -79,7 +79,7 @@ contract BSMBase {
             address(defaultFeeRecipient)
         );
         
-        bsmTester.initialize(address(assetVault));
+        bsmTester.initialize(address(escrow));
 
         // create initial ebtc supply
         mockEbtcToken.mint(defaultGovernance, 50e18);
@@ -121,7 +121,7 @@ contract BSMBase {
         setRoleCapability(
             15,
             address(bsmTester),
-            bsmTester.updateAssetVault.selector,
+            bsmTester.updateEscrow.selector,
             true
         );
         setRoleCapability(
@@ -150,20 +150,20 @@ contract BSMBase {
         );
         setRoleCapability(
             15,
-            address(assetVault),
-            assetVault.claimProfit.selector,
+            address(escrow),
+            escrow.claimProfit.selector,
             true
         );
         setRoleCapability(
             15,
-            address(assetVault),
-            assetVault.depositToExternalVault.selector,
+            address(escrow),
+            escrow.depositToExternalVault.selector,
             true
         );
         setRoleCapability(
             15,
-            address(assetVault),
-            assetVault.redeemFromExternalVault.selector,
+            address(escrow),
+            escrow.redeemFromExternalVault.selector,
             true
         );
         setRoleCapability(
@@ -175,7 +175,7 @@ contract BSMBase {
         setRoleCapability(
             15,
             address(rateLimitingConstraint),
-            rateLimitingConstraint.setMintingCap.selector,
+            rateLimitingConstraint.setMintingConfig.selector,
             true
         );
         // Give ebtc tech ops role 15
@@ -195,11 +195,9 @@ contract BSMBase {
         // Give authorizedUser role 16
         setUserRole(testAuthorizedUser, 16, true);
 
-        vm.prank(techOpsMultisig);
-        bsmTester.updateAssetVault(address(assetVault));
         // Set minting cap to 10%
         vm.prank(techOpsMultisig);
-        rateLimitingConstraint.setMintingCap(address(bsmTester), RateLimitingConstraint.MintingCap(1000, 0, false));
+        rateLimitingConstraint.setMintingConfig(address(bsmTester), RateLimitingConstraint.MintingConfig(1000, 0, false));
     }
 
     function setUserRole(address _user, uint8 _role, bool _enabled) internal prankDefaultGovernance {

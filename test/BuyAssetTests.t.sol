@@ -57,14 +57,14 @@ contract BuyAssetTests is BSMTestBase {
         assertEq(mockAssetToken.balanceOf(testBuyer), 0.99e18);
         assertEq(mockEbtcToken.balanceOf(testBuyer), 9e18);
 
-        assertEq(assetVault.feeProfit(), 0.01e18);
-        assertEq(assetVault.depositAmount(), 4e18);
+        assertEq(escrow.feeProfit(), 0.01e18);
+        assertEq(escrow.totalAssetsDeposited(), 4e18);
 
         vm.prank(techOpsMultisig);
-        assetVault.claimProfit();
+        escrow.claimProfit();
 
         assertEq(mockAssetToken.balanceOf(defaultFeeRecipient), 0.01e18);
-        assertEq(assetVault.feeProfit(), 0);
+        assertEq(escrow.feeProfit(), 0);
     }
 
     function testBuyAssetFeeAuthorizedUser() public {
@@ -82,8 +82,8 @@ contract BuyAssetTests is BSMTestBase {
         assertEq(bsmTester.buyAssetNoFee(1e18, testAuthorizedUser), 1e18);
     }
 
-    function testBuyAssetFailAboveDepositAmount() public {
-        vm.expectRevert(abi.encodeWithSelector(EbtcBSM.InsufficientAssetTokens.selector, 1e18, assetVault.depositAmount()));
+    function testBuyAssetFailAboveTotalAssetsDeposited() public {
+        vm.expectRevert(abi.encodeWithSelector(EbtcBSM.InsufficientAssetTokens.selector, 1e18, escrow.totalAssetsDeposited()));
         bsmTester.buyAsset(1e18, address(this));
     }
 }

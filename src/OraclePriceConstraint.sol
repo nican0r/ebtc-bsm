@@ -46,9 +46,9 @@ contract OraclePriceConstraint is IMintingConstraint, AuthNoOwner {
     }
 
     function canMint(
-        uint256 amount,
-        address minter
-    ) external returns (bool, bytes memory) {
+        uint256 _amount,
+        address _minter
+    ) external view returns (bool, bytes memory) {
         uint256 assetPrice = _getAssetPrice();
         /// @dev peg price is 1e18
         uint256 minAcceptablePrice = (1e18 * minPriceBPS) / BPS;

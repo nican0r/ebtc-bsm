@@ -23,7 +23,7 @@ contract SellAssetTests is BSMTestBase {
         assertEq(mockEbtcToken.balanceOf(testMinter), 1e18);
 
         assertEq(
-            mockAssetToken.balanceOf(address(bsmTester.assetVault())),
+            mockAssetToken.balanceOf(address(bsmTester.escrow())),
             1e18
         );
     }
@@ -43,19 +43,19 @@ contract SellAssetTests is BSMTestBase {
 
         assertEq(mockAssetToken.balanceOf(testMinter), 8.99e18);
 
-        // asset vault has user deposit (1e18) + fee(0.01e18) = 1.01e18
+        // escrow has user deposit (1e18) + fee(0.01e18) = 1.01e18
         assertEq(
-            mockAssetToken.balanceOf(address(bsmTester.assetVault())),
+            mockAssetToken.balanceOf(address(bsmTester.escrow())),
             1.01e18
         );
-        assertEq(assetVault.feeProfit(), 0.01e18);
-        assertEq(assetVault.depositAmount(), 1e18);
+        assertEq(escrow.feeProfit(), 0.01e18);
+        assertEq(escrow.totalAssetsDeposited(), 1e18);
 
         vm.prank(techOpsMultisig);
-        assetVault.claimProfit();
+        escrow.claimProfit();
 
         assertEq(mockAssetToken.balanceOf(defaultFeeRecipient), 0.01e18);
-        assertEq(assetVault.feeProfit(), 0);
+        assertEq(escrow.feeProfit(), 0);
     }
 
     function testBuyEbtcFeeAuthorizedUser() public {
@@ -70,7 +70,7 @@ contract SellAssetTests is BSMTestBase {
     }
 
     function testBuyEbtcFailAboveCap() public {
-        uint256 mintingCapBPS = rateLimitingConstraint.getMintingCap(address(bsmTester)).relativeCapBPS;
+        uint256 mintingCapBPS = rateLimitingConstraint.getMintingConfig(address(bsmTester)).relativeCapBPS;
 
         uint256 amountToMint = (mockEbtcToken.totalSupply() *
             (mintingCapBPS + 1)) / bsmTester.BPS();

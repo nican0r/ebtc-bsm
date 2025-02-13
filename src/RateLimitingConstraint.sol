@@ -3,11 +3,11 @@ pragma solidity ^0.8.25;
 
 import {AuthNoOwner} from "./Dependencies/AuthNoOwner.sol";
 import {IMintingConstraint} from "./Dependencies/IMintingConstraint.sol";
-import {IActivePool} from "./Dependencies/IActivePool.sol";
+import {IActivePoolObserver} from "./Dependencies/IActivePoolObserver.sol";
 import {IEbtcBSM} from "./Dependencies/IEbtcBSM.sol";
 
 contract RateLimitingConstraint is IMintingConstraint, AuthNoOwner {
-    struct MintingCap {
+    struct MintingConfig {
         uint256 relativeCapBPS;
         uint256 absoluteCap;
         bool useAbsoluteCap;
@@ -15,11 +15,10 @@ contract RateLimitingConstraint is IMintingConstraint, AuthNoOwner {
 
     uint256 public constant BPS = 10000;
 
-    /// @notice minting cap % of ebtc total supply TWAP
-    mapping(address => MintingCap) internal mintingCap;
-    IActivePool public immutable ACTIVE_POOL;
+    mapping(address => MintingConfig) internal mintingConfig;
+    IActivePoolObserver public immutable ACTIVE_POOL_OBSERVER;
 
-    event MintingCapUpdated(address indexed minter, MintingCap oldCap, MintingCap newCap);
+    event MintingConfigUpdated(address indexed minter, MintingConfig oldConfig, MintingConfig newConfig);
 
     error AboveMintingCap(
         uint256 amountToMint,
@@ -28,38 +27,38 @@ contract RateLimitingConstraint is IMintingConstraint, AuthNoOwner {
     );
 
     constructor(address _activePool, address _governance) {
-        ACTIVE_POOL = IActivePool(_activePool);
+        ACTIVE_POOL_OBSERVER = IActivePoolObserver(_activePool);
         _initializeAuthority(_governance);
     }
 
-    function canMint(uint256 amount, address minter) external returns (bool, bytes memory) {
-        MintingCap memory cap = mintingCap[minter];
+    function canMint(uint256 _amount, address _minter) external view returns (bool, bytes memory) {
+        MintingConfig memory cap = mintingConfig[_minter];
         uint256 maxMint;
 
         if (cap.useAbsoluteCap) {
             maxMint = cap.absoluteCap;
         } else {
             /// @notice ACTIVE_POOL.observe returns the eBTC TWAP total supply
-            uint256 totalEbtcSupply = ACTIVE_POOL.observe();
+            uint256 totalEbtcSupply = ACTIVE_POOL_OBSERVER.observe();
             maxMint = (totalEbtcSupply * cap.relativeCapBPS) / BPS;
         }
 
-        uint256 newTotalToMint = IEbtcBSM(minter).totalMinted() + amount;
+        uint256 newTotalToMint = IEbtcBSM(_minter).totalMinted() + _amount;
 
         if (newTotalToMint > maxMint) {
-            return (false, abi.encodeWithSelector(AboveMintingCap.selector, amount, newTotalToMint, maxMint));
+            return (false, abi.encodeWithSelector(AboveMintingCap.selector, _amount, newTotalToMint, maxMint));
         }
 
         return (true, "");
     }
 
-    function getMintingCap(address minter) external view returns (MintingCap memory) {
-        return mintingCap[minter];
+    function getMintingConfig(address _minter) external view returns (MintingConfig memory) {
+        return mintingConfig[_minter];
     }
 
-    function setMintingCap(address minter, MintingCap calldata newMintingCap) external requiresAuth {
-        require(newMintingCap.relativeCapBPS <= BPS);
-        emit MintingCapUpdated(minter, mintingCap[minter], newMintingCap);
-        mintingCap[minter] = newMintingCap;
+    function setMintingConfig(address _minter, MintingConfig calldata _newMintingConfig) external requiresAuth {
+        require(_newMintingConfig.relativeCapBPS <= BPS);
+        emit MintingConfigUpdated(_minter, mintingConfig[_minter], _newMintingConfig);
+        mintingConfig[_minter] = _newMintingConfig;
     }
 }

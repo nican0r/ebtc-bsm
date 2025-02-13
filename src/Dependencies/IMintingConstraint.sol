@@ -6,5 +6,5 @@ interface IMintingConstraint {
 
     error MintingConstraintCheckFailed(address constraint, uint256 amount, address minter, bytes errData);
 
-    function canMint(uint256 amount, address minter) external returns (bool, bytes memory);
+    function canMint(uint256 amount, address minter) external view returns (bool, bytes memory);
 }

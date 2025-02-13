@@ -15,7 +15,7 @@ abstract contract Setup is BaseSetup, BSMBase, ActorManager, AssetManager {
     address second_actor = address(0x411c3);
     
     // CONFIG
-    bool ALLOWS_REKT = bool(true);
+    bool ALLOWS_REKT = bool(false);
 
     function setup() internal virtual override {
         BSMBase.baseSetup();

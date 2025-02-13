@@ -6,7 +6,7 @@ import {BeforeAfter} from "./BeforeAfter.sol";
 
 abstract contract Properties is BeforeAfter, Asserts {
     function property_accounting_is_sound() public {
-        gte(assetVault.totalBalance(), assetVault.depositAmount(), "accounting is sound");
+        gte(escrow.totalBalance(), escrow.totalAssetsDeposited(), "accounting is sound");
     }
 
 }

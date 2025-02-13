@@ -9,10 +9,10 @@ contract GovernanceTests is BSMTestBase {
     function testClaimProfit() public {
         vm.expectRevert("Auth: UNAUTHORIZED");
         vm.prank(testMinter);
-        assetVault.claimProfit();
+        escrow.claimProfit();
 
         vm.prank(techOpsMultisig);
-        assetVault.claimProfit();
+        escrow.claimProfit();
     }
 
     function testSetBuyAssetFee() public {
@@ -39,16 +39,16 @@ contract GovernanceTests is BSMTestBase {
         bsmTester.setFeeToSell(maxFee + 1);
     }
 
-    function testSetMintingCap() public {
+    function testSetMintingConfig() public {
         vm.expectRevert("Auth: UNAUTHORIZED");
         vm.prank(testMinter);
-        rateLimitingConstraint.setMintingCap(address(bsmTester), RateLimitingConstraint.MintingCap(0, 0, false));
+        rateLimitingConstraint.setMintingConfig(address(bsmTester), RateLimitingConstraint.MintingConfig(0, 0, false));
     }
 
-    function testUpdateAssetVault() public {
+    function testUpdateEscrow() public {
         vm.expectRevert("Auth: UNAUTHORIZED");
         vm.prank(testMinter);
-        bsmTester.updateAssetVault(address(0));
+        bsmTester.updateEscrow(address(0));
     }
 
     function testSetMinPrice() public {

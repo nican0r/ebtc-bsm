@@ -1,6 +1,6 @@
 # Invariants
 
-## Base Asset Vault
+## Base Escrow
 
 -> Profit is balance above sum deposits
 

@@ -8,7 +8,7 @@ import "../src/EbtcBSM.sol";
 contract BSMTestBase is BSMBase, Test {
     function testBsmCannotBeReinitialize() public {
         vm.expectRevert(abi.encodeWithSelector(Initializable.InvalidInitialization.selector));
-        bsmTester.initialize(address(assetVault));
+        bsmTester.initialize(address(escrow));
     }
 
     function setUp() public virtual {

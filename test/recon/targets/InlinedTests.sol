@@ -15,7 +15,7 @@ abstract contract InlinedTests is BaseTargetFunctions, Properties {
 
 
     function doomsday_claimProfit_never_reverts() public stateless asTechops {
-        try assetVault.claimProfit() {
+        try escrow.claimProfit() {
             /// @audit prob missing the loss on withdrwa, which is something that can happen
         } catch {
             t(false, "doomsday_claimProfit_never_reverts");
@@ -26,9 +26,9 @@ abstract contract InlinedTests is BaseTargetFunctions, Properties {
 
 
     // // TODO: Something about fee and migration
-    // function doomsday_updateAssetVault(address newVault) public stateless asTechops {
-    //     // TODO: Deploy new asset vault that is legitimate and then try migrating
-    //     try bsmTester.updateAssetVault(newVault) {
+    // function doomsday_updateEscrow(address newEscrow) public stateless asTechops {
+    //     // TODO: Deploy new escrow that is legitimate and then try migrating
+    //     try bsmTester.updateEscrow(newEscrow) {
 
     //     } catch {
 
@@ -38,19 +38,18 @@ abstract contract InlinedTests is BaseTargetFunctions, Properties {
 
 
     // == BASIC STUFF == //
-    function assetVault_afterDeposit(uint256 assetAmount, uint256 feeAmount) public stateless asActor {
-        assetVault.afterDeposit(assetAmount, feeAmount);
+    function escrow_onDeposit(uint256 assetAmount) public stateless asActor {
+        escrow.onDeposit(assetAmount);
         t(false, "always fail");
     }
 
-    function assetVault_beforeWithdraw(uint256 assetAmount, uint256 feeAmount) public stateless asActor {
-        assetVault.beforeWithdraw(assetAmount, feeAmount);
+    function escrow_onWithdraw(uint256 assetAmount) public stateless asActor {
+        escrow.onWithdraw(assetAmount);
         t(false, "always fail");
     }
         // TODO: Revert always
-    function assetVault_migrateTo(address newVault) public stateless asActor {
-        assetVault.migrateTo(newVault);
+    function escrow_onMigrateSource(address newEscrow) public stateless asActor {
+        escrow.onMigrateSource(newEscrow);
         t(false, "always fail");
     }
-
 }
