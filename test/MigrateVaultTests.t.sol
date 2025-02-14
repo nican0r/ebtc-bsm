@@ -8,12 +8,10 @@ import "@openzeppelin/contracts/mocks/token/ERC4626Mock.sol";
 
 contract MigrateAssetVaultTest is BSMTestBase {
     ERC4626Escrow internal newEscrow;
-    ERC4626Mock internal newExternalVault;
     
     function setUp() public virtual override {
         super.setUp();
 
-        newExternalVault = new ERC4626Mock(address(mockAssetToken));
         newEscrow = new ERC4626Escrow(
             address(externalVault),
             address(bsmTester.ASSET_TOKEN()),
@@ -47,7 +45,7 @@ contract MigrateAssetVaultTest is BSMTestBase {
         assertEq(bsmTester.buyAsset(assetAmount, testBuyer), assetAmount);
 
         uint256 prevTotalDeposit = escrow.totalAssetsDeposited();
-        uint256 prevBalance = escrow.ASSET_TOKEN().balanceOf(address(escrow));
+        uint256 prevBalance = escrow.totalBalance();
         assertEq(prevTotalDeposit, endAssetAmount);
         assertGt(prevBalance, 0);
 
@@ -55,12 +53,12 @@ contract MigrateAssetVaultTest is BSMTestBase {
         bsmTester.updateEscrow(address(newEscrow));
 
         uint256 crtTotalDeposit = escrow.totalAssetsDeposited();
-        uint256 crtBalance = escrow.ASSET_TOKEN().balanceOf(address(escrow));
+        uint256 crtBalance = escrow.totalBalance();
         assertEq(crtTotalDeposit, 0);
         assertEq(crtBalance, 0);
 
         uint256 totalDeposit = newEscrow.totalAssetsDeposited();
-        uint256 balance = newEscrow.ASSET_TOKEN().balanceOf(address(newEscrow));
+        uint256 balance = newEscrow.totalBalance();
         assertEq(totalDeposit, endAssetAmount);
         assertEq(balance, endAssetAmount);
     }
@@ -145,17 +143,17 @@ contract MigrateAssetVaultTest is BSMTestBase {
         // redeem half
         vm.prank(techOpsMultisig);
         escrow.redeemFromExternalVault(shares / 2 , assetAmount / 2);
-
+        
         // migrate escrow
         uint256 totalAssetsDeposited = escrow.totalAssetsDeposited();
-        uint256 escrowBalance = externalVault.balanceOf(address(escrow));
+        uint256 escrowBalance = externalVault.balanceOf(address(escrow));console.log("About to migrate in ln 151");
         vm.prank(techOpsMultisig);
         bsmTester.updateEscrow(address(newEscrow));
-
+        
         // check accounting
         assertEq(escrow.totalAssetsDeposited(), 0);
         assertEq(newEscrow.totalAssetsDeposited(), totalAssetsDeposited);
-        assertEq(externalVault.balanceOf(address(escrow)), 0);console.log(externalVault.balanceOf(address(newEscrow)), escrowBalance);
+        assertEq(externalVault.balanceOf(address(escrow)), 0);
         assertEq(externalVault.balanceOf(address(newEscrow)), escrowBalance);console.log(externalVault.balanceOf(address(escrow)));
     }
 }
