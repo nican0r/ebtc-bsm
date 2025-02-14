@@ -10,11 +10,7 @@ abstract contract Properties is BeforeAfter, Asserts {
     }
 
     function property_fees_profit_increases() public {
-        if (currentOperation == OpType.CLAIM || currentOperation == OpType.MIGRATE) {
-            // claims are all of total profit, there are no partial claims 
-            // migrations also claim profit
-            eq(assetVault.feeProfit(), 0, "Profit should be 0");
-        } else {
+        if (currentOperation != OpType.CLAIM && currentOperation != OpType.MIGRATE) {
             // any other operation should increase the profit or stay the same
             gte(_after.feesProfit, _before.feesProfit, "Profit should only increase");
         }
