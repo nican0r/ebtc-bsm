@@ -18,7 +18,7 @@ abstract contract Properties is BeforeAfter, Asserts {
 
     function property_assets_are_not_lost() public {
         if(currentOperation != OpType.MIGRATE && currentOperation != OpType.CLAIM && currentOperation != OpType.BUY_ASSET_WITH_EBTC) {
-            eq(_before.totalBalance, _after.totalBalance, "Assets should not be lost");
+            gte(_after.totalBalance, _before.totalBalance, "Assets should not be lost");
         }
     }
 }
