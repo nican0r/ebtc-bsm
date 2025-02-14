@@ -13,11 +13,11 @@ import {ManagersTargets} from "./targets/ManagersTargets.sol";
 import {OpType} from "./BeforeAfter.sol";
 
 abstract contract TargetFunctions is AdminTargets, InlinedTests, ManagersTargets {
-    function bsmTester_buyAssetWithEbtc(uint256 _ebtcAmountIn) public updateGhosts asActor {
+    function bsmTester_buyAssetWithEbtc(uint256 _ebtcAmountIn) public updateGhostsWithType(OpType.BUY_ASSET_WITH_EBTC) asActor {
         bsmTester.buyAssetWithEbtc(_ebtcAmountIn);
     }
 
-    function bsmTester_buyEbtcWithAsset(uint256 _assetAmountIn) public updateGhostsWithType(OpType.BUY_ASSET_WITH_EBTC) asActor {
+    function bsmTester_buyEbtcWithAsset(uint256 _assetAmountIn) public updateGhosts asActor {
         bsmTester.buyEbtcWithAsset(_assetAmountIn);
     }
 
