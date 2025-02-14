@@ -15,7 +15,7 @@ contract MigrateAssetVaultTest is BSMTestBase {
 
         newExternalVault = new ERC4626Mock(address(mockAssetToken));
         newEscrow = new ERC4626Escrow(
-            address(newExternalVault),
+            address(externalVault),
             address(bsmTester.ASSET_TOKEN()),
             address(bsmTester),
             address(bsmTester.authority()),
@@ -129,5 +129,33 @@ contract MigrateAssetVaultTest is BSMTestBase {
         assertEq(externalVault.balanceOf(address(escrow)), 0);
         assertEq(externalVault.balanceOf(address(newEscrow)), escrowBalance);
     }
-    //TODO claim profit not from fee but from price change
+
+    function testProfitAndExtLending() public {
+        uint256 assetAmount = 2e18;
+        vm.prank(techOpsMultisig);
+        bsmTester.setFeeToSell(100);
+
+        vm.prank(testMinter);
+        bsmTester.sellAsset(assetAmount, address(this));
+        // external lending actions
+        uint256 shares = externalVault.previewDeposit(assetAmount);
+        vm.prank(techOpsMultisig);
+        escrow.depositToExternalVault(assetAmount, shares);
+
+        // redeem half
+        vm.prank(techOpsMultisig);
+        escrow.redeemFromExternalVault(shares / 2 , assetAmount / 2);
+
+        // migrate escrow
+        uint256 totalAssetsDeposited = escrow.totalAssetsDeposited();
+        uint256 escrowBalance = externalVault.balanceOf(address(escrow));
+        vm.prank(techOpsMultisig);
+        bsmTester.updateEscrow(address(newEscrow));
+
+        // check accounting
+        assertEq(escrow.totalAssetsDeposited(), 0);
+        assertEq(newEscrow.totalAssetsDeposited(), totalAssetsDeposited);
+        assertEq(externalVault.balanceOf(address(escrow)), 0);console.log(externalVault.balanceOf(address(newEscrow)), escrowBalance);
+        assertEq(externalVault.balanceOf(address(newEscrow)), escrowBalance);console.log(externalVault.balanceOf(address(escrow)));
+    }
 }
