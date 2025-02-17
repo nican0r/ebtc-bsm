@@ -44,6 +44,8 @@ contract BaseEscrow is AuthNoOwner, IEscrow {
 
     function _onWithdraw(uint256 _assetAmount) internal virtual returns (uint256) {
         totalAssetsDeposited -= _assetAmount;
+        /// @dev returning the amount requested since this is the base contract
+        /// it's possible for other implementations to return lower amounts
         return _assetAmount;
     }
 
