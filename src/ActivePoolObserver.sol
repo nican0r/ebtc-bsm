@@ -19,7 +19,6 @@ contract ActivePoolObserver {
         return (avgValue, latestAcc);
     }
 
-    /// @dev Should we update in observe?
     function _checkUpdatePeriod(ITwapWeightedObserver.PackedData memory data, uint256 period) internal view returns (bool) {
         return block.timestamp >= (data.lastObserved + period);
     }

@@ -26,8 +26,8 @@ contract RateLimitingConstraint is IMintingConstraint, AuthNoOwner {
         uint256 maxMint
     );
 
-    constructor(address _activePool, address _governance) {
-        ACTIVE_POOL_OBSERVER = IActivePoolObserver(_activePool);
+    constructor(address _activePoolObserver, address _governance) {
+        ACTIVE_POOL_OBSERVER = IActivePoolObserver(_activePoolObserver);
         _initializeAuthority(_governance);
     }
 
