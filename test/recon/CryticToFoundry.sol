@@ -8,7 +8,7 @@ import "forge-std/console2.sol";
 
 // forge test --match-contract CryticToFoundry -vv
 contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
-    function setUp() public override {
+    function setUp() public {
         setup();
 
         vm.label(address(mockAssetToken), "mockAssetToken");
@@ -17,42 +17,42 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
         vm.label(address(this), "actor");
         vm.label(address(bsmTester), "bsmTester");
         vm.label(address(techOpsMultisig), "techOpsMultisig");
-        vm.label(address(assetVault), "assetVault");
+        vm.label(address(escrow), "escrow");
     }
 
     // forge test --match-test test_crytic -vvv
     function test_crytic() public {
-        bsmTester_updateAssetVault();
+        bsmTester_updateEscrow();
     } 
 
-// forge test --match-test test_doomsday_bsmTester_updateAssetVault_always_works_0 -vvv 
-function test_doomsday_bsmTester_updateAssetVault_always_works_0() public {
+// forge test --match-test test_doomsday_bsmTester_updateEscrow_always_works_0 -vvv 
+function test_doomsday_bsmTester_updateEscrow_always_works_0() public {
 
-    bsmTester_buyEbtcWithAsset(3);
+    bsmTester_sellAsset(3);
 
     switch_asset(1);
 
     asset_mint(0xc7183455a4C133Ae270771860664b6B7ec320bB1,1);
 
-    console2.log("assetVault.totalBalance()", assetVault.totalBalance());
-    console2.log("assetVault.depositAmount()", assetVault.depositAmount());
+    console2.log("escrow.totalBalance()", escrow.totalBalance());
+    console2.log("escrow.totalAssetsDeposited()", escrow.totalAssetsDeposited());
 
-    assetVault_depositToExternalVault_rekt(3,0);
+    escrow_depositToExternalVault_rekt(3,0);
 
-    doomsday_bsmTester_updateAssetVault_always_works();
+    bsmTester_updateEscrow_always_works();
 
  }
 
  // forge test --match-test test_property_accounting_is_sound_0 -vvv 
 function test_property_accounting_is_sound_0() public {
 
-    bsmTester_buyEbtcWithAsset(1);
+    bsmTester_sellAsset(1);
 
     switch_asset(1);
 
     asset_mint(0xc7183455a4C133Ae270771860664b6B7ec320bB1,1);
 
-    assetVault_depositToExternalVault_rekt(1,0);
+    escrow_depositToExternalVault_rekt(1,0);
 
     property_accounting_is_sound();
 
@@ -61,11 +61,11 @@ function test_property_accounting_is_sound_0() public {
 // forge test --match-test test_inlined_withdrawProfitTest_1 -vvv 
 function test_inlined_withdrawProfitTest_1() public {
 
-    bsmTester_buyEbtcWithAsset(1);
+    bsmTester_sellAsset(1);
 
-    assetVault_depositToExternalVault_rekt(1,0);
+    escrow_depositToExternalVault_rekt(1,0);
 
-    bsmTester_updateAssetVault();
+    bsmTester_updateEscrow();
 
     inlined_withdrawProfitTest();
 

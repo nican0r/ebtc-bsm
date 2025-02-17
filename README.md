@@ -4,9 +4,9 @@
 
 The BSM contract facilitates bi-directional exchange between eBTC and other BTC-denominated assets with no slippage. 
 
-## Asset Vault
+## Escrow
 
-The BSM uses asset vaults to make the architecture more modular. This modular design allows the BSM to perform external lending by depositing idle assets into various money markets. This external lending capability is controlled through a configurable liquidity buffer (100% buffer maintains full reserves). Any yields generated from these lending activities contribute to protocol revenue, which governance can allocate to incentivize stEBTC.
+The BSM uses escrows to make the architecture more modular. This modular design allows the BSM to perform external lending by depositing idle assets into various money markets. This external lending capability is controlled through a configurable liquidity buffer (100% buffer maintains full reserves). Any yields generated from these lending activities contribute to protocol revenue, which governance can allocate to incentivize stEBTC.
 
 ## Fee Mechanism
 
