@@ -131,29 +131,36 @@ contract MigrateAssetVaultTest is BSMTestBase {
     function testProfitAndExtLending() public {
         uint256 assetAmount = 2e18;
         vm.prank(techOpsMultisig);
-        bsmTester.setFeeToSell(100);
+    	bsmTester.setFeeToSell(100);
 
-        vm.prank(testMinter);
+        // operations including selling, and buying assets, as well as external lending
+        vm.prank(techOpsMultisig);
         bsmTester.sellAsset(assetAmount, address(this));
-        // external lending actions
+        uint256 profit = escrow.feeProfit();
+
+        assertGt(profit, 0);
+
         uint256 shares = externalVault.previewDeposit(assetAmount);
         vm.prank(techOpsMultisig);
         escrow.depositToExternalVault(assetAmount, shares);
 
-        // redeem half
+        vm.prank(testBuyer);
+        bsmTester.buyAsset(assetAmount / 2, testBuyer);
+
+        assertGt(escrow.totalAssetsDeposited(), 0);
+        assertGt(externalVault.balanceOf(address(escrow)), 0);
+        
         vm.prank(techOpsMultisig);
         escrow.redeemFromExternalVault(shares / 2 , assetAmount / 2);
-        
-        // migrate escrow
+        // Migrate escrow
         uint256 totalAssetsDeposited = escrow.totalAssetsDeposited();
-        uint256 escrowBalance = externalVault.balanceOf(address(escrow));console.log("\n\n\nTest: About to migrate in ln 151, from ",address(escrow),"to",address(newEscrow));
+        uint256 escrowBalance = externalVault.balanceOf(address(escrow));
         vm.prank(techOpsMultisig);
         bsmTester.updateEscrow(address(newEscrow));
-        console.log("Test: migration is over ln 152");
-        // check accounting
+        
         assertEq(escrow.totalAssetsDeposited(), 0);
         assertEq(newEscrow.totalAssetsDeposited(), totalAssetsDeposited);
         assertEq(externalVault.balanceOf(address(escrow)), 0);
-        assertEq(externalVault.balanceOf(address(newEscrow)), escrowBalance);console.log(externalVault.balanceOf(address(escrow)));
+        assertEq(externalVault.balanceOf(address(newEscrow)), escrowBalance);
     }
 }
