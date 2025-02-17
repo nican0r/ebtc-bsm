@@ -146,10 +146,10 @@ contract MigrateAssetVaultTest is BSMTestBase {
         
         // migrate escrow
         uint256 totalAssetsDeposited = escrow.totalAssetsDeposited();
-        uint256 escrowBalance = externalVault.balanceOf(address(escrow));console.log("About to migrate in ln 151");
+        uint256 escrowBalance = externalVault.balanceOf(address(escrow));console.log("\n\n\nTest: About to migrate in ln 151, from ",address(escrow),"to",address(newEscrow));
         vm.prank(techOpsMultisig);
         bsmTester.updateEscrow(address(newEscrow));
-        
+        console.log("Test: migration is over ln 152");
         // check accounting
         assertEq(escrow.totalAssetsDeposited(), 0);
         assertEq(newEscrow.totalAssetsDeposited(), totalAssetsDeposited);
