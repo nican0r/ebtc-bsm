@@ -8,7 +8,7 @@ import {ActivePoolObserver} from "../src/ActivePoolObserver.sol";
 import {ITwapWeightedObserver} from "../src/Dependencies/ITwapWeightedObserver.sol";
 import {TwapWeightedObserver} from "../src/Dependencies/TwapWeightedObserver.sol";
 
-// Must have the ETH_RPC_URL environment variable set
+// Must have the RPC_URL environment variable set in .env file
 // forge script scripts/ObserveCompare.s.sol:ObserveCompare --fork
 contract ObserveCompare is Script {
     address constant activePoolAddress = 0x6dBDB6D420c110290431E863A1A978AE53F69ebC;
