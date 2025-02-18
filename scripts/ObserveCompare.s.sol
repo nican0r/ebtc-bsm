@@ -15,7 +15,10 @@ contract ObserveCompare is Script {
     address constant ebtc = 0x661c70333AA1850CcDBAe82776Bb436A0fCfeEfB;
     IActivePoolObserver activePool = IActivePoolObserver(activePoolAddress);
     ITwapWeightedObserver observer;
-    uint256 blocksToCheck = 5;
+    // Amount of blocks to consider
+    uint256 blocksToCheck = 50;
+    // Semi random way of checking blocks
+    uint256 step = 10;
 
     function run() external {
         string memory rpcUrl = vm.envString("RPC_URL");
@@ -30,7 +33,7 @@ contract ObserveCompare is Script {
         observer = new TwapWeightedObserver(0);
         ActivePoolObserver activePoolObserver = new ActivePoolObserver(ITwapWeightedObserver(address(observer)));
         console.log("About to compare...");
-        for(uint256 i = startBlock; i <= endBlock; i += 1){//TODO customize + 1
+        for(uint256 i = startBlock; i <= endBlock; i += step){
             vm.roll(i);
             
             uint256 resultActivePool = activePool.observe();
@@ -42,7 +45,7 @@ contract ObserveCompare is Script {
                 counter++;
             }
         }
-        console.log("Finished comparison with a total of ", counter, " different results, out of ", blocksToCheck);
+        console.log("Finished comparison with a total of ", counter, " different results, out of ", (blocksToCheck / step) + 1);
     }
 
 }
