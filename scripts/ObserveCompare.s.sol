@@ -6,7 +6,6 @@ import "forge-std/Script.sol";
 import {IActivePoolObserver} from "../src/Dependencies/IActivePoolObserver.sol";
 import {ActivePoolObserver} from "../src/ActivePoolObserver.sol";
 import {ITwapWeightedObserver} from "../src/Dependencies/ITwapWeightedObserver.sol";
-import {TwapWeightedObserver} from "../src/Dependencies/TwapWeightedObserver.sol";
 
 // Must have the RPC_URL environment variable set in .env file
 // forge script scripts/ObserveCompare.s.sol:ObserveCompare --fork
