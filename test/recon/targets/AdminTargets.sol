@@ -109,7 +109,7 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
             escrow.FEE_RECIPIENT()
         );
 
-        uint256 balB4 = (assetVault.ASSET_TOKEN()).balanceOf(address(assetVault.FEE_RECIPIENT()));
+        uint256 balB4 = (escrow.ASSET_TOKEN()).balanceOf(address(escrow.FEE_RECIPIENT()));
         
         vm.prank(address(techOpsMultisig));
         bsmTester.updateEscrow(address(escrow));

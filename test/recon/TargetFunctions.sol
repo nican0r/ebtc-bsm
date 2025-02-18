@@ -30,20 +30,20 @@ abstract contract TargetFunctions is AdminTargets, InlinedTests, ManagersTargets
             // so we just need to check that if we migrate, the actors can withdraw up to the depositAmount
             for (uint256 i = 0; i < actors.length; i++) {
                 address actor = actors[i];
-                uint256 depositAmount = assetVault.depositAmount();
+                uint256 depositAmount = escrow.totalAssetsDeposited();
                 uint256 actorBalance = mockEbtcToken.balanceOf(actor);
                 
                 if(depositAmount >= actorBalance) {
                     vm.prank(actor);
-                    bsmTester_buyAssetWithEbtc(actorBalance);
+                    bsmTester_buyAsset(actorBalance);
                 } else {
                     vm.prank(actor);
-                    bsmTester_buyAssetWithEbtc(depositAmount);
+                    bsmTester_buyAsset(depositAmount);
                 }
             }
 
             // the depositAmount should be 0 after all the actors have withdrawn
-            eq(assetVault.depositAmount(), 0, "depositAmount should be 0 after all the actors have exchanged eBTC for underlying asset");
+            eq(escrow.totalAssetsDeposited(), 0, "depositAmount should be 0 after all the actors have exchanged eBTC for underlying asset");
         }
     }
 

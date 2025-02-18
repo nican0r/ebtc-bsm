@@ -37,12 +37,12 @@ abstract contract BeforeAfter is Setup {
     }
 
     function __before() internal {
-        _before.feesProfit = assetVault.feeProfit();
-        _before.totalBalance = assetVault.totalBalance();
+        _before.feesProfit = escrow.feeProfit();
+        _before.totalBalance = escrow.totalBalance();
     }
 
     function __after() internal {
-        _after.feesProfit = assetVault.feeProfit();
-        _after.totalBalance = assetVault.totalBalance();
+        _after.feesProfit = escrow.feeProfit();
+        _after.totalBalance = escrow.totalBalance();
     }
 }
