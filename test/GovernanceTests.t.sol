@@ -2,52 +2,53 @@
 pragma solidity ^0.8.25;
 
 import "./BSMTestBase.sol";
+import "../src/RateLimitingConstraint.sol";
 
 contract GovernanceTests is BSMTestBase {
 
     function testClaimProfit() public {
         vm.expectRevert("Auth: UNAUTHORIZED");
         vm.prank(testMinter);
-        assetVault.claimProfit();
+        escrow.claimProfit();
 
         vm.prank(techOpsMultisig);
-        assetVault.claimProfit();
+        escrow.claimProfit();
     }
 
     function testSetBuyAssetFee() public {
         vm.expectRevert("Auth: UNAUTHORIZED");
         vm.prank(testMinter);
-        bsmTester.setFeeToBuyAsset(1);
+        bsmTester.setFeeToBuy(1);
 
         uint256 maxFee = bsmTester.MAX_FEE();
 
         vm.expectRevert();
         vm.prank(techOpsMultisig);
-        bsmTester.setFeeToBuyAsset(maxFee + 1);
+        bsmTester.setFeeToBuy(maxFee + 1);
     }
 
     function testSetBuyEbtcFee() public {
         vm.expectRevert("Auth: UNAUTHORIZED");
         vm.prank(testMinter);
-        bsmTester.setFeeToBuyEbtc(1);
+        bsmTester.setFeeToSell(1);
 
         uint256 maxFee = bsmTester.MAX_FEE();
 
         vm.expectRevert();
         vm.prank(techOpsMultisig);
-        bsmTester.setFeeToBuyEbtc(maxFee + 1);
+        bsmTester.setFeeToSell(maxFee + 1);
     }
 
-    function testSetMintingCap() public {
+    function testSetMintingConfig() public {
         vm.expectRevert("Auth: UNAUTHORIZED");
         vm.prank(testMinter);
-        bsmTester.setMintingCap(0);
+        rateLimitingConstraint.setMintingConfig(address(bsmTester), RateLimitingConstraint.MintingConfig(0, 0, false));
     }
 
-    function testUpdateAssetVault() public {
+    function testUpdateEscrow() public {
         vm.expectRevert("Auth: UNAUTHORIZED");
         vm.prank(testMinter);
-        bsmTester.updateAssetVault(address(0));
+        bsmTester.updateEscrow(address(0));
     }
 
     function testSetMinPrice() public {
@@ -55,16 +56,16 @@ contract GovernanceTests is BSMTestBase {
 
         vm.expectRevert("Auth: UNAUTHORIZED");
         vm.prank(testMinter);
-        oracleModule.setMinPrice(bps);
+        oraclePriceConstraint.setMinPrice(bps);
 
         vm.expectRevert();
         vm.prank(techOpsMultisig);
-        oracleModule.setMinPrice(bps + 1);
+        oraclePriceConstraint.setMinPrice(bps + 1);
     }
 
     function testSetOracleFreshness() public {
         vm.expectRevert("Auth: UNAUTHORIZED");
         vm.prank(testMinter);
-        oracleModule.setOracleFreshness(1000);
+        oraclePriceConstraint.setOracleFreshness(1000);
     }
 }

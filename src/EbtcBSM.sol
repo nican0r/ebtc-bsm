@@ -3,15 +3,14 @@ pragma solidity ^0.8.25;
 
 import {AuthNoOwner} from "./Dependencies/AuthNoOwner.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IEbtcToken} from "./Dependencies/IEbtcToken.sol";
 import {IEbtcBSM} from "./Dependencies/IEbtcBSM.sol";
-import {IActivePool} from "./Dependencies/IActivePool.sol";
-import {IOracleModule} from "./Dependencies/IOracleModule.sol";
-import {IAssetVault} from "./Dependencies/IAssetVault.sol";
-import {BaseAssetVault} from "./BaseAssetVault.sol";
+import {IMintingConstraint} from "./Dependencies/IMintingConstraint.sol";
+import {IEscrow} from "./Dependencies/IEscrow.sol";
 
-contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
+contract EbtcBSM is IEbtcBSM, Pausable, Initializable, AuthNoOwner {
     using SafeERC20 for IERC20;
 
     uint256 public constant BPS = 10000;
@@ -19,145 +18,172 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
 
     // Immutables
     IERC20 public immutable ASSET_TOKEN;
-    // TODO: make this configurable
     IEbtcToken public immutable EBTC_TOKEN;
-    IActivePool public immutable ACTIVE_POOL;
-    address public immutable FEE_RECIPIENT;
 
-    uint256 public feeToBuyEbtcBPS;
-    uint256 public feeToBuyAssetBPS;
-    /// @notice minting cap % of ebtc total supply TWAP
-    uint256 public mintingCapBPS;
+    uint256 public feeToSellBPS;
+    uint256 public feeToBuyBPS;
     uint256 public totalMinted;
-    IAssetVault public assetVault;
-    IOracleModule public oracleModule;
+    IEscrow public escrow;
+    IMintingConstraint public oraclePriceConstraint;
+    IMintingConstraint public rateLimitingConstraint;
 
-    error AboveMintingCap(
-        uint256 amountToMint,
-        uint256 newTotalToMint,
-        uint256 maxMint
-    );
-    error BadOracleRate();
     error InsufficientAssetTokens(uint256 required, uint256 available);
 
     /**
      * @notice Contract constructor
      * @param _assetToken Address of the underlying asset token
-     * @param _oracleModule Address of the oracle module
+     * @param _oraclePriceConstraint Address of the oracle price constraint
+     * @param _rateLimitingConstraint address of the rate limiting constraint
      * @param _ebtcToken Address of the eBTC token
-     * @param _activePool Address of the active pool
-     * @param _feeRecipient Address to receive fees
      * @param _governance Address of the eBTC governor
      */
     constructor(
         address _assetToken,
-        address _oracleModule,
+        address _oraclePriceConstraint,
+        address _rateLimitingConstraint,
         address _ebtcToken,
-        address _activePool,
-        address _feeRecipient,
         address _governance
     ) {
         require(_assetToken != address(0));
-        require(_oracleModule != address(0));
+        require(_oraclePriceConstraint != address(0));
+        require(_rateLimitingConstraint != address(0));
         require(_ebtcToken != address(0));
-        require(_activePool != address(0));
-        require(_feeRecipient != address(0));
         require(_governance != address(0));
 
         ASSET_TOKEN = IERC20(_assetToken);
-        oracleModule = IOracleModule(_oracleModule);
+        oraclePriceConstraint = IMintingConstraint(_oraclePriceConstraint);
+        rateLimitingConstraint = IMintingConstraint(_rateLimitingConstraint);
         EBTC_TOKEN = IEbtcToken(_ebtcToken);
-        ACTIVE_POOL = IActivePool(_activePool);
-        FEE_RECIPIENT = _feeRecipient;
         _initializeAuthority(_governance);
-
-        // potentially remove this
-        assetVault = IAssetVault(
-            address(
-                new BaseAssetVault(
-                    _assetToken,
-                    address(this),
-                    _governance,
-                    FEE_RECIPIENT
-                )
-            )
-        );
+    }
+    
+    /// @notice This function will be invoked only once within the same transaction as the deployment of
+    // this contract, thereby preventing any other user from executing this function.
+    function initialize(address _escrow) initializer external {
+        require(_escrow != address(0));
+        escrow = IEscrow(_escrow);
     }
 
-    // Extract this into rate limiter
-    function _checkMintingCap(uint256 _amountToMint) private {
-        /// @notice ACTIVE_POOL.observe returns the eBTC TWAP total supply
-        uint256 totalEbtcSupply = ACTIVE_POOL.observe();
-        uint256 maxMint = (totalEbtcSupply * mintingCapBPS) / BPS;
-        uint256 newTotalToMint = totalMinted + _amountToMint;
-
-        if (newTotalToMint > maxMint) {
-            revert AboveMintingCap(_amountToMint, newTotalToMint, maxMint);
-        }
+    function _feeToBuy(uint256 _amount) private view returns (uint256) {
+        return (_amount * feeToBuyBPS) / BPS;
     }
 
-    function _feeToBuyAsset(uint256 _amount) private view returns (uint256) {
-        return (_amount * feeToBuyAssetBPS) / BPS;
-    }
-
-    function _feeToBuyEbtc(uint256 _amount) private view returns (uint256) {
-        uint256 fee = feeToBuyEbtcBPS;
+    function _feeToSell(uint256 _amount) private view returns (uint256) {
+        uint256 fee = feeToSellBPS;
         return (_amount * fee) / (fee + BPS);
     }
 
-    function _buyEbtcWithAsset(
+    function _previewSellAsset(
         uint256 _assetAmountIn,
-        uint256 feeAmount
-    ) internal returns (uint256 _ebtcAmountOut) {
-        if (!oracleModule.canMint()) {
-            revert BadOracleRate();
+        uint256 _feeAmount
+    ) private view returns (uint256 _ebtcAmountOut) {
+        _ebtcAmountOut = _assetAmountIn - _feeAmount;
+        _checkMintingConstraints(_ebtcAmountOut);
+    }
+
+    function _previewBuyAsset(
+        uint256 _ebtcAmountIn,
+        uint256 _feeAmount
+    ) private view returns (uint256 _assetAmountOut) {
+        _checkTotalAssetsDeposited(_ebtcAmountIn);
+        _assetAmountOut = escrow.previewWithdraw(_ebtcAmountIn) - _feeAmount;
+    }
+
+    function _checkTotalAssetsDeposited(uint256 amountToBuy) private view {
+        // ebtc to asset price is treated as 1 for buyAsset
+        uint256 totalAssetsDeposited = escrow.totalAssetsDeposited();
+        if (amountToBuy > totalAssetsDeposited) {
+            revert InsufficientAssetTokens(amountToBuy, totalAssetsDeposited);
+        }
+    }
+
+    function _checkMintingConstraints(uint256 _amountToMint) private view {
+        bool success;
+        bytes memory errData;
+
+        (success, errData) = oraclePriceConstraint.canMint(_amountToMint, address(this));
+
+        if (!success) {
+            revert IMintingConstraint.MintingConstraintCheckFailed(
+                address(oraclePriceConstraint),
+                _amountToMint,
+                address(this),
+                errData
+            );
         }
 
-        _ebtcAmountOut = _assetAmountIn - feeAmount;
+        (success, errData) = rateLimitingConstraint.canMint(_amountToMint, address(this));
 
-        // asset to ebtc price is treated as 1 if oracle check passes
-        _checkMintingCap(_ebtcAmountOut);
+        if (!success) {
+            revert IMintingConstraint.MintingConstraintCheckFailed(
+                address(rateLimitingConstraint),
+                _amountToMint,
+                address(this),
+                errData
+            );
+        }
+    }
+
+    function _sellAsset(
+        uint256 _assetAmountIn,
+        address _recipient,
+        uint256 _feeAmount
+    ) internal returns (uint256 _ebtcAmountOut) {
+        _ebtcAmountOut = _assetAmountIn - _feeAmount;
+
+        _checkMintingConstraints(_ebtcAmountOut);
 
         // INVARIANT: _assetAmountIn >= _ebtcAmountOut
         ASSET_TOKEN.safeTransferFrom(
             msg.sender,
-            address(assetVault),
+            address(escrow),
             _assetAmountIn
         );
-        assetVault.afterDeposit(_ebtcAmountOut, feeAmount); // depositAmount = _assetAmountIn - fee
+        escrow.onDeposit(_ebtcAmountOut); // ebtcMinted = _assetAmountIn - fee
 
         totalMinted += _ebtcAmountOut;
 
-        EBTC_TOKEN.mint(msg.sender, _ebtcAmountOut);
+        EBTC_TOKEN.mint(_recipient, _ebtcAmountOut);
 
-        emit BoughtEbtcWithAsset(_assetAmountIn, _ebtcAmountOut, feeAmount);
+        emit AssetSold(_assetAmountIn, _ebtcAmountOut, _feeAmount);
     }
 
-    function _buyAssetWithEbtc(
+    function _buyAsset(
         uint256 _ebtcAmountIn,
-        uint256 feeAmount
+        address _recipient,
+        uint256 _feeAmount
     ) internal returns (uint256 _assetAmountOut) {
-        // ebtc to asset price is treated as 1 for buyAsset
-        uint256 depositAmount = assetVault.depositAmount();
-        if (_ebtcAmountIn > depositAmount) {
-            revert InsufficientAssetTokens(_ebtcAmountIn, depositAmount);
-        }
+        _checkTotalAssetsDeposited(_ebtcAmountIn);
 
         EBTC_TOKEN.burn(msg.sender, _ebtcAmountIn);
 
         totalMinted -= _ebtcAmountIn;
 
-        uint256 redeemedAmount = assetVault.beforeWithdraw(_ebtcAmountIn, feeAmount);
+        uint256 redeemedAmount = escrow.onWithdraw(
+            _ebtcAmountIn
+        );
 
-        _assetAmountOut = redeemedAmount - feeAmount;
+        _assetAmountOut = redeemedAmount - _feeAmount;
         // INVARIANT: _assetAmountOut <= _ebtcAmountIn
         ASSET_TOKEN.safeTransferFrom(
-            address(assetVault),
-            msg.sender,
+            address(escrow),
+            _recipient,
             _assetAmountOut
         );
 
-        emit BoughtAssetWithEbtc(_ebtcAmountIn, _assetAmountOut, feeAmount);
+        emit AssetBought(_ebtcAmountIn, _assetAmountOut, _feeAmount);
+    }
+
+    function previewSellAsset(
+        uint256 _assetAmountIn
+    ) external returns (uint256 _ebtcAmountOut) {
+        return _previewSellAsset(_assetAmountIn, _feeToSell(_assetAmountIn));
+    }
+
+    function previewBuyAsset(
+        uint256 _ebtcAmountIn
+    ) external returns (uint256 _assetAmountOut) {
+        return _previewBuyAsset(_ebtcAmountIn, _feeToBuy(_ebtcAmountIn));
     }
 
     /**
@@ -165,12 +191,15 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
      * @dev This function assumes the exchange rate between the asset token and eBTC is 1:1
      *
      * @param _assetAmountIn Amount of asset tokens to deposit
+     * @param _recipient custom recipient for the minted eBTC
      * @return _ebtcAmountOut Amount of eBTC tokens minted to the user
      */
-    function buyEbtcWithAsset(
-        uint256 _assetAmountIn
+    function sellAsset(
+        uint256 _assetAmountIn,
+        address _recipient
     ) external whenNotPaused returns (uint256 _ebtcAmountOut) {
-        return _buyEbtcWithAsset(_assetAmountIn, _feeToBuyEbtc(_assetAmountIn));
+        return
+            _sellAsset(_assetAmountIn, _recipient, _feeToSell(_assetAmountIn));
     }
 
     /**
@@ -178,69 +207,73 @@ contract EbtcBSM is IEbtcBSM, Pausable, AuthNoOwner {
      * @dev This function assumes the exchange rate between the asset token and eBTC is 1:1
      *
      * @param _ebtcAmountIn Amount of eBTC tokens to burn
+     * @param _recipient custom recipient for the asset
      * @return _assetAmountOut Amount of asset tokens sent to user
      */
-    function buyAssetWithEbtc(
-        uint256 _ebtcAmountIn
+    function buyAsset(
+        uint256 _ebtcAmountIn,
+        address _recipient
     ) external whenNotPaused returns (uint256 _assetAmountOut) {
-        return _buyAssetWithEbtc(_ebtcAmountIn, _feeToBuyAsset(_ebtcAmountIn));
+        return _buyAsset(_ebtcAmountIn, _recipient, _feeToBuy(_ebtcAmountIn));
     }
 
-    function buyEbtcWithAssetNoFee(
-        uint256 _assetAmountIn
+    function sellAssetNoFee(
+        uint256 _assetAmountIn,
+        address _recipient
     ) external whenNotPaused requiresAuth returns (uint256 _ebtcAmountOut) {
-        return _buyEbtcWithAsset(_assetAmountIn, 0);
+        return _sellAsset(_assetAmountIn, _recipient, 0);
     }
 
-    function buyAssetWithEbtcNoFee(
-        uint256 _ebtcAmountIn
+    function buyAssetNoFee(
+        uint256 _ebtcAmountIn,
+        address _recipient
     ) external whenNotPaused requiresAuth returns (uint256 _assetAmountOut) {
-        return _buyAssetWithEbtc(_ebtcAmountIn, 0);
+        return _buyAsset(_ebtcAmountIn, _recipient, 0);
     }
 
-    function setFeeToBuyEbtc(uint256 _feeToBuyEbtcBPS) external requiresAuth {
-        require(_feeToBuyEbtcBPS <= MAX_FEE);
-        emit FeeToBuyEbtcUpdated(feeToBuyEbtcBPS, _feeToBuyEbtcBPS);
-        feeToBuyEbtcBPS = _feeToBuyEbtcBPS;
+    function setFeeToSell(uint256 _feeToSellBPS) external requiresAuth {
+        require(_feeToSellBPS <= MAX_FEE);
+        emit FeeToSellUpdated(feeToSellBPS, _feeToSellBPS);
+        feeToSellBPS = _feeToSellBPS;
     }
 
-    function setFeeToBuyAsset(uint256 _feeToBuyAssetBPS) external requiresAuth {
-        require(_feeToBuyAssetBPS <= MAX_FEE);
-        emit FeeToBuyAssetUpdated(feeToBuyAssetBPS, _feeToBuyAssetBPS);
-        feeToBuyAssetBPS = _feeToBuyAssetBPS;
+    function setFeeToBuy(uint256 _feeToBuyBPS) external requiresAuth {
+        require(_feeToBuyBPS <= MAX_FEE);
+        emit FeeToBuyUpdated(feeToBuyBPS, _feeToBuyBPS);
+        feeToBuyBPS = _feeToBuyBPS;
     }
 
-    function setMintingCap(uint256 _mintingCapBPS) external requiresAuth {
-        require(_mintingCapBPS <= BPS);
-        emit MintingCapUpdated(mintingCapBPS, _mintingCapBPS);
-        mintingCapBPS = _mintingCapBPS;
+    function setRateLimitingConstraint(address _newRateLimitingConstraint) external requiresAuth {
+        require(_newRateLimitingConstraint != address(0));
+        emit IMintingConstraint.MintingConstraintUpdated(address(rateLimitingConstraint), _newRateLimitingConstraint);
+        rateLimitingConstraint = IMintingConstraint(_newRateLimitingConstraint);
     }
 
-    function setOracleModule(address _oracleModule) external requiresAuth {
-        require(_oracleModule != address(0));
-        emit OracleModuleUpdated(address(oracleModule), _oracleModule);
-        oracleModule = IOracleModule(_oracleModule);
+    function setOraclePriceConstraint(address _newOraclePriceConstraint) external requiresAuth {
+        require(_newOraclePriceConstraint != address(0));
+        emit IMintingConstraint.MintingConstraintUpdated(address(oraclePriceConstraint), _newOraclePriceConstraint);
+        oraclePriceConstraint = IMintingConstraint(_newOraclePriceConstraint);
     }
 
-    /// @notice Updates the asset vault address and initiates a vault migration
-    /// @param newVault new asset vault address
-    function updateAssetVault(address newVault) external requiresAuth {
-        require(newVault != address(0));
+    /// @notice Updates the escrow address and initiates an escrow migration
+    /// @param _newEscrow new escrow address
+    function updateEscrow(address _newEscrow) external requiresAuth {
+        require(_newEscrow != address(0));
 
-        uint256 totalBalance = assetVault.totalBalance();
+        uint256 totalBalance = escrow.totalBalance();
         if (totalBalance > 0) {
             /// @dev cache deposit amount (will be set to 0 after migrateTo())
-            uint256 depositAmount = assetVault.depositAmount();
+            uint256 totalAssetsDeposited = escrow.totalAssetsDeposited();
 
             /// @dev transfer liquidity to new vault
-            assetVault.migrateTo(newVault);
+            escrow.onMigrateSource(_newEscrow);
 
-            /// @dev set depositAmount on the new vault (fee amount should be 0 here)
-            IAssetVault(newVault).setDepositAmount(depositAmount);
+            /// @dev set totalAssetsDeposited on the new vault (fee amount should be 0 here)
+            IEscrow(_newEscrow).onMigrateTarget(totalAssetsDeposited);
         }
 
-        emit AssetVaultUpdated(address(assetVault), newVault);
-        assetVault = IAssetVault(newVault);
+        emit EscrowUpdated(address(escrow), _newEscrow);
+        escrow = IEscrow(_newEscrow);
     }
 
     function pause() external requiresAuth {

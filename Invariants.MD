@@ -41,7 +41,7 @@ https://github.com/GalloDaSballo/ebtc-bsm/blob/354f929a08823cc1cd3fc1d66d034a3c5
 ```solidity
     /// @notice Allows the BSM to migrate liquidity to a new vault
     function migrateTo(address newVault) external onlyBSM {
-        /// @dev take profit first (totalBalance == depositAmount after)
+        /// @dev take profit first (totalBalance == totalAssetsDeposited after)
         withdrawProfit();
 ```
 
@@ -64,7 +64,7 @@ https://github.com/GalloDaSballo/ebtc-bsm/blob/354f929a08823cc1cd3fc1d66d034a3c5
         if (profit > 0) {
             _withdrawProfit(profit);
             // INVARIANT: total balance must be >= deposit amount
-            require(_totalBalance() >= depositAmount);
+            require(_totalBalance() >= totalAssetsDeposited);
         }
     }
 ```

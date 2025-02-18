@@ -9,9 +9,9 @@ import {vm} from "@chimera/Hevm.sol";
 import {ActorManager} from "./managers/ActorManager.sol";
 import {AssetManager} from "./managers/AssetManager.sol";
 
-import {BSMTestBase} from "../BSMTestBase.sol";
+import {BSMBase} from "../BSMTestBase.sol";
 
-abstract contract Setup is BaseSetup, BSMTestBase, ActorManager, AssetManager {
+abstract contract Setup is BaseSetup, BSMBase, ActorManager, AssetManager {
     address second_actor = address(0x411c3);
     bool hasMigrated;
     
@@ -19,7 +19,7 @@ abstract contract Setup is BaseSetup, BSMTestBase, ActorManager, AssetManager {
     bool ALLOWS_REKT = bool(false);
 
     function setup() internal virtual override {
-        BSMTestBase.setUp();
+        BSMBase.baseSetup();
 
         // New Actor, beside address(this)
         _addActor(second_actor);
