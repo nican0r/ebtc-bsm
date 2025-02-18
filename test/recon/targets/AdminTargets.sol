@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {BaseTargetFunctions} from "@chimera/BaseTargetFunctions.sol";
-import {BeforeAfter} from "../BeforeAfter.sol";
+import {OpType, BeforeAfter} from "../BeforeAfter.sol";
 import {Properties} from "../Properties.sol";
 import {vm} from "@chimera/Hevm.sol";
 import "../../../src/ERC4626Escrow.sol";
@@ -109,6 +109,8 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
             escrow.FEE_RECIPIENT()
         );
 
+        uint256 balB4 = (escrow.ASSET_TOKEN()).balanceOf(address(escrow.FEE_RECIPIENT()));
+        
         vm.prank(address(techOpsMultisig));
         bsmTester.updateEscrow(address(escrow));
     }

@@ -36,7 +36,6 @@ abstract contract InlinedTests is BaseTargetFunctions, Properties {
 
     // }
 
-
     // == BASIC STUFF == //
     function escrow_onDeposit(uint256 assetAmount) public stateless asActor {
         escrow.onDeposit(assetAmount);
