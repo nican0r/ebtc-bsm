@@ -73,4 +73,42 @@ function test_doomsday_bsmTester_updateEscrow_always_works_0() public {
 
     }
 
+// forge test --match-test test_property_assets_are_not_lost_0 -vvv 
+function test_property_assets_are_not_lost_0() public {
+
+    add_new_asset(0);
+
+    bsmTester_updateEscrow();
+
+    switch_asset(245385509657871629879163406604431959412);
+
+    asset_mint(0xD16d567549A2a2a2005aEACf7fB193851603dd70,1);
+
+    bsmTester_updateEscrow();
+
+    bsmTester_updateEscrow();
+
+    property_assets_are_not_lost();
+
+ }
+
+// forge test --match-test test_property_fees_profit_increases_1 -vvv 
+function test_property_fees_profit_increases_1() public {
+
+    add_new_asset(0);
+
+    bsmTester_updateEscrow();
+
+    switch_asset(74161108554978309850505936167242305938598684009618505165820837042431577447);
+
+    asset_mint(0xD16d567549A2a2a2005aEACf7fB193851603dd70,26);
+
+    bsmTester_updateEscrow();
+
+    bsmTester_updateEscrow();
+
+    property_fees_profit_increases();
+
+ }
+
 }

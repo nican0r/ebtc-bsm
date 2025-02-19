@@ -45,7 +45,7 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
         escrow.onMigrateTarget(amount);
     }
 
-    function escrow_claimProfit() public updateGhosts asTechops {
+    function escrow_claimProfit() public updateGhostsWithType(OpType.CLAIM) asTechops {
         escrow.claimProfit();
     }
 
@@ -72,7 +72,7 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
         lte(escrow.totalBalance(), balB4Escrow - expected, "Escrow balance decreases at least by expected");
 
         // Profit should be 0
-        // eq(escrow.feeProfit(), 0, "Profit should be 0"); /// @audit is it ok for it to be non-zero?
+        eq(escrow.feeProfit(), 0, "Profit should be 0"); /// @audit is it ok for it to be non-zero?
     }
 
     
@@ -99,7 +99,7 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
     }
 
     // Custom handler
-    function bsmTester_updateEscrow() public updateGhosts {
+    function bsmTester_updateEscrow() public updateGhostsWithType(OpType.MIGRATE) {
         // Replace
         escrow = new ERC4626Escrow(
             address(externalVault),

@@ -16,7 +16,7 @@ abstract contract Setup is BaseSetup, BSMBase, ActorManager, AssetManager {
     bool hasMigrated;
     
     // CONFIG
-    bool ALLOWS_REKT = bool(false);
+    bool ALLOWS_REKT = bool(true);
 
     function setup() internal virtual override {
         BSMBase.baseSetup();

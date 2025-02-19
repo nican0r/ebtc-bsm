@@ -16,6 +16,7 @@ abstract contract BeforeAfter is Setup {
     struct Vars {
         uint256 feesProfit;
         uint256 totalBalance;
+        uint256 netTotalBalance;
     }
 
     Vars internal _before;
@@ -39,10 +40,14 @@ abstract contract BeforeAfter is Setup {
     function __before() internal {
         _before.feesProfit = escrow.feeProfit();
         _before.totalBalance = escrow.totalBalance();
+        // Safe because: property_accounting_of_profit_is_sound
+        _before.netTotalBalance = _before.totalBalance - _before.feesProfit;
     }
 
     function __after() internal {
         _after.feesProfit = escrow.feeProfit();
         _after.totalBalance = escrow.totalBalance();
+        // Safe because: property_accounting_of_profit_is_sound
+        _after.netTotalBalance = _after.totalBalance - _after.feesProfit;
     }
 }
