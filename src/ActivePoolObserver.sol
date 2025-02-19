@@ -36,7 +36,7 @@ contract ActivePoolObserver {
 
         // A reference period is 7 days
         // For each second passed after update
-        // Let's virtally sync TWAP
+        // Let's virtually sync TWAP
         // With a weight, that is higher, the more time has passed
         (uint128 virtualAvgValue, uint128 obsAcc) = _calcUpdatedAvg(data);
 
