@@ -42,15 +42,15 @@ contract BaseEscrow is AuthNoOwner, IEscrow {
         ASSET_TOKEN.approve(BSM, type(uint256).max);
     }
 
-    /// @dev Returns the total balance of assets held by the contract
-    function _totalBalance() internal virtual view returns (uint256) {//TODO these are repeated, just point to the other
+    /// @dev Internal function that checks the total balance of assets held by the contract
+    function _totalBalance() internal virtual view returns (uint256) {
         return ASSET_TOKEN.balanceOf(address(this));
     }
 
     /// @notice Internal function to handle asset deposits
     /// @param _assetAmount The amount of assets to deposit
     function _onDeposit(uint256 _assetAmount) internal virtual {
-        totalAssetsDeposited += _assetAmount;//TODO should i specify where the check of the deposit is done so people dont think this is unsafe?
+        totalAssetsDeposited += _assetAmount;
     }
 
     /// @notice Internal function to handle asset withdrawals
@@ -63,7 +63,7 @@ contract BaseEscrow is AuthNoOwner, IEscrow {
         return _assetAmount;
     }
 
-    /// @notice Preview the withdrawable amount without making any state changes
+    /// @notice Internal function to preview the withdrawable amount without making any state changes
     /// @param _assetAmount The amount of assets queried for withdrawal
     /// @return The amount that can be withdrawn
     function _previewWithdraw(uint256 _assetAmount) internal virtual view returns (uint256) {
@@ -81,7 +81,7 @@ contract BaseEscrow is AuthNoOwner, IEscrow {
         // Do nothing
     }
 
-    /// @notice Claims profits generated from fees and external lending
+    /// @notice Internal function to claim profits generated from fees and external lending
     function _claimProfit() internal {
         uint256 profit = feeProfit();
         if (profit > 0) {
@@ -97,12 +97,14 @@ contract BaseEscrow is AuthNoOwner, IEscrow {
     }
 
     /// @notice Deposits assets into the escrow
+    /// @dev Can only be called by the bsm contract
     /// @param _assetAmount The amount of assets to deposit
-    function onDeposit(uint256 _assetAmount) external onlyBSM {//TODO document the modifier presence in functions
+    function onDeposit(uint256 _assetAmount) external onlyBSM {
         _onDeposit(_assetAmount);
     }
 
     /// @notice Withdraws assets from the escrow
+    /// @dev Can only be called by the bsm contract
     /// @param _assetAmount The amount of assets to withdraw
     /// @return The amount of assets withdrawn
     function onWithdraw(uint256 _assetAmount) external onlyBSM returns (uint256) {
@@ -114,6 +116,7 @@ contract BaseEscrow is AuthNoOwner, IEscrow {
     }
 
     /// @notice Called on the source escrow during a migration by the BSM to transfer liquidity
+    /// @dev Can only be called by the bsm contract
     /// @param _newEscrow new escrow address
     function onMigrateSource(address _newEscrow) external onlyBSM {
         /// @dev take profit first (totalBalance == depositAmount after)
@@ -130,6 +133,7 @@ contract BaseEscrow is AuthNoOwner, IEscrow {
     }
 
     /// @notice Called on the target escrow during a migration by the BSM to set the user deposit amount
+    /// @dev Can only be called by the bsm contract
     function onMigrateTarget(uint256 _amount) external onlyBSM {
         totalAssetsDeposited = _amount;
     }
@@ -146,6 +150,7 @@ contract BaseEscrow is AuthNoOwner, IEscrow {
     }
 
     /// @notice Claim profit (fees + external lending profit)
+    /// @dev can only be called by authorized users
     function claimProfit() external requiresAuth {
         _claimProfit();
     }

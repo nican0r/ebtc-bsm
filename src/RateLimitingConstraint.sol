@@ -77,6 +77,7 @@ contract RateLimitingConstraint is IMintingConstraint, AuthNoOwner {
     }
 
     /// @notice Sets the minting configuration for a specific minter
+    /// @dev Can only be called by authorized users
     /// @param _minter The address of the minter
     /// @param _newMintingConfig The new minting configuration for the minter
     function setMintingConfig(address _minter, MintingConfig calldata _newMintingConfig) external requiresAuth {

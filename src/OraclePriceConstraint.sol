@@ -94,6 +94,7 @@ contract OraclePriceConstraint is IMintingConstraint, AuthNoOwner {
     }
 
     /// @notice Updates the minimum price threshold for minting
+    /// @dev Can only be called by authorized users
     /// @param _minPriceBPS The new minimum price, in basis points
     function setMinPrice(uint256 _minPriceBPS) external requiresAuth {
         require(_minPriceBPS <= BPS);
@@ -102,6 +103,7 @@ contract OraclePriceConstraint is IMintingConstraint, AuthNoOwner {
     }
 
     /// @notice Updates the maximum age for acceptable oracle data
+    /// @dev Can only be called by authorized users
     /// @param _oracleFreshnessSeconds The new maximum age in seconds
     function setOracleFreshness(
         uint256 _oracleFreshnessSeconds

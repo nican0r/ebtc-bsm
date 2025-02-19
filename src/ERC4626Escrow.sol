@@ -106,6 +106,7 @@ contract ERC4626Escrow is BaseEscrow, IERC4626Escrow {
     }
 
     /// @notice Deposits assets into the external vault
+    /// @dev Can only be called by authorized users
     /// @param assetsToDeposit The amount of assets to deposit
     /// @param minShares The minimum acceptable shares to receive for the deposited assets
     function depositToExternalVault(uint256 assetsToDeposit, uint256 minShares) external requiresAuth {
@@ -117,6 +118,7 @@ contract ERC4626Escrow is BaseEscrow, IERC4626Escrow {
     }
 
     /// @notice Redeems shares from the external vault
+    /// @dev Can only be called by authorized users
     /// @param sharesToRedeem The number of shares to redeem
     /// @param minAssets The minimum acceptable assets to receive for the redeemed shares
     function redeemFromExternalVault(uint256 sharesToRedeem, uint256 minAssets) external requiresAuth {
