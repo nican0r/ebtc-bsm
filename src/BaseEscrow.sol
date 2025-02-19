@@ -29,7 +29,7 @@ contract BaseEscrow is AuthNoOwner, IEscrow {
 
     /// @notice Contract constructor
     /// @param _assetToken The ERC20 token address used for deposits and withdrawals
-    /// @param _bsm The address of the Badger Stability Module (BSM)
+    /// @param _bsm The address of the eBTC Stability Module (BSM)
     /// @param _governance The governance address used for AuthNoOwner
     /// @param _feeRecipient The address where collected fees are sent
     constructor(address _assetToken, address _bsm, address _governance, address _feeRecipient) {
