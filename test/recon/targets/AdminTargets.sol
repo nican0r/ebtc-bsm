@@ -58,13 +58,14 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
         uint256 expected = escrow.EXTERNAL_VAULT().previewRedeem(shares);
 
         uint256 balB4 = (escrow.ASSET_TOKEN()).balanceOf(address(escrow.FEE_RECIPIENT()));
-        escrow_claimProfit(); // The estimate should be 
+        escrow_claimProfit(); /// TODO: CHECK THIS BETTER, Something is off in the logic
         uint256 balAfter = (escrow.ASSET_TOKEN()).balanceOf(address(escrow.FEE_RECIPIENT()));
 
         // The test is a bound as some slippage loss can happen, we take the worst slippage and the exact amt and check against those
         uint256 deltaFees = balAfter - balB4;
 
-        gte(expected, deltaFees, "Recipien got at least expected");
+        // NOTE: Since expected is the product of 2 round downs, we should receive more due to rounding
+        gte(deltaFees, expected, "Recipient got at least expected");
         lte(deltaFees, amt, "Delta fees is at most profit");
 
         // Total Balance of Vualt should also move correctly
