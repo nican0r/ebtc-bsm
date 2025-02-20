@@ -59,4 +59,9 @@ abstract contract Setup is BaseSetup, BSMBase, ActorManager, AssetManager {
         vm.prank(_getActor());
         _;
     }
+
+    modifier stateless() {
+        _;
+        revert("stateless");
+    }
 }

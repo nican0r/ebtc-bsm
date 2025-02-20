@@ -9,10 +9,11 @@ import {vm} from "@chimera/Hevm.sol";
 import {AdminTargets} from "./targets/AdminTargets.sol";
 import {InlinedTests} from "./targets/InlinedTests.sol";
 import {ManagersTargets} from "./targets/ManagersTargets.sol";
+import {PreviewTests} from "./targets/PreviewTests.sol";
 
 import {OpType} from "./BeforeAfter.sol";
 
-abstract contract TargetFunctions is AdminTargets, InlinedTests, ManagersTargets {
+abstract contract TargetFunctions is AdminTargets, InlinedTests, ManagersTargets, PreviewTests {
     function bsmTester_buyAsset(uint256 _ebtcAmountIn) public updateGhostsWithType(OpType.BUY_ASSET_WITH_EBTC) asActor {
         bsmTester.buyAsset(_ebtcAmountIn, _getActor());
     }
