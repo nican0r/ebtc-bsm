@@ -292,7 +292,28 @@ function test_inlined_withdrawProfitTest_123() public {
 
     asset_mint(0xc7183455a4C133Ae270771860664b6B7ec320bB1,1);
 
+    uint256 amt = escrow.feeProfit();
+    console2.log("escrow.EXTERNAL_VAULT().balanceOf(address(escrow));", escrow.EXTERNAL_VAULT().balanceOf(address(escrow)));
+    
+    uint256 balB4Escrow = escrow.totalBalance();
+
+    // Expected lower
+    uint256 shares = escrow.EXTERNAL_VAULT().convertToShares(amt);
+    uint256 expected = escrow.EXTERNAL_VAULT().previewRedeem(shares);
+
+    console2.log("amt", amt);
+    console2.log("balB4Escrow", balB4Escrow);
+    console2.log("shares", shares);
+    console2.log("expected", expected);
+
+    uint256 balB4 = (escrow.ASSET_TOKEN()).balanceOf(address(escrow.FEE_RECIPIENT()));
+
     inlined_withdrawProfitTest();
+
+    uint256 balAfter = (escrow.ASSET_TOKEN()).balanceOf(address(escrow.FEE_RECIPIENT()));
+
+    console2.log("balB4", balB4);
+    console2.log("balAfter", balAfter);
 
  }
 

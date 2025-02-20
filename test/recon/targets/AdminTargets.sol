@@ -65,6 +65,9 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
         uint256 deltaFees = balAfter - balB4;
 
         // NOTE: Since expected is the product of 2 round downs, we should receive more due to rounding
+        // Also: The test assumes all profit is off of the shares
+        // But in reality you can have profit from donations
+        // As such we perform this clamped check 
         gte(deltaFees, expected, "Recipient got at least expected");
         lte(deltaFees, amt, "Delta fees is at most profit");
 
