@@ -59,13 +59,43 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
         escrow.claimProfit();
     }
 
-    function inlined_withdrawProfitTest() public {
+    function inlined_withdrawProfitTest_liquid() public {
         uint256 amt = escrow.feeProfit();
         uint256 balB4Escrow = escrow.totalBalance();
 
+        uint256 liquidBal = escrow.ASSET_TOKEN().balanceOf(address(escrow));
+        if(amt > liquidBal) {
+            revert("Other test");
+        }
+
+        uint256 balB4 = (escrow.ASSET_TOKEN()).balanceOf(address(escrow.FEE_RECIPIENT()));
+        escrow_claimProfit();
+        uint256 balAfter = (escrow.ASSET_TOKEN()).balanceOf(address(escrow.FEE_RECIPIENT()));
+
+        uint256 deltaFees = balAfter - balB4;
+
+        // Since there is no conversion all checks are exact
+        gte(deltaFees, amt, "Recipient got exactly expected");
+        eq(escrow.totalBalance(), balB4Escrow - amt, "Escrow balance decreases exactly by profit");
+        eq(escrow.feeProfit(), 0, "Profit should be 0");
+    }
+
+    // TODO: Figure out bug
+    function inlined_withdrawProfitTest() public {
+        uint256 amt = escrow.feeProfit();
+        uint256 balB4Escrow = escrow.totalBalance();
+        
+        uint256 liquidBal = escrow.ASSET_TOKEN().balanceOf(address(escrow));
+        uint256 toWithdraw = amt - liquidBal;
+        if(amt > liquidBal) {
+            // TODO
+        } else {
+            revert("Other test");
+        }
+
         // Expected lower
-        uint256 shares = escrow.EXTERNAL_VAULT().convertToShares(amt);
-        uint256 expected = escrow.EXTERNAL_VAULT().previewRedeem(shares);
+        uint256 shares = escrow.EXTERNAL_VAULT().convertToShares(toWithdraw);
+        uint256 expected = escrow.EXTERNAL_VAULT().previewRedeem(shares) + liquidBal;
 
         uint256 balB4 = (escrow.ASSET_TOKEN()).balanceOf(address(escrow.FEE_RECIPIENT()));
         escrow_claimProfit();
@@ -75,10 +105,6 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
         // The test is a bound as some slippage loss can happen, we take the worst slippage and the exact amt and check against those
         uint256 deltaFees = balAfter - balB4;
 
-        // NOTE: Since expected is the product of 2 round downs, we should receive more due to rounding
-        // Also: The test assumes all profit is off of the shares
-        // But in reality you can have profit from donations
-        // As such we perform this clamped check
         gte(deltaFees, expected, "Recipient got at least expected");
         lte(deltaFees, amt, "Delta fees is at most profit");
 
