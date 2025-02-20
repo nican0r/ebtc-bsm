@@ -14,16 +14,22 @@ contract MockAlwaysTrueAuthority {
     }
 }
 
-
 abstract contract AdminTargets is BaseTargetFunctions, Properties {
-
     /// === Escrow === ///
-    function escrow_depositToExternalVault_rekt(uint256 assetsToDeposit, uint256 expectedShares) public updateGhosts asTechops {
+    function escrow_depositToExternalVault_rekt(uint256 assetsToDeposit, uint256 expectedShares)
+        public
+        updateGhosts
+        asTechops
+    {
         require(ALLOWS_REKT, "Allows rekt");
         escrow.depositToExternalVault(assetsToDeposit, expectedShares);
     }
     /// === Escrow === ///
-    function escrow_depositToExternalVault_not_rekt(uint256 assetsToDeposit, uint256 expectedShares) public updateGhosts {
+
+    function escrow_depositToExternalVault_not_rekt(uint256 assetsToDeposit, uint256 expectedShares)
+        public
+        updateGhosts
+    {
         require(!ALLOWS_REKT, "Must not allow rekt");
 
         uint256 balanceB4 = escrow.totalBalance();
@@ -37,7 +43,11 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
         require(balanceAfter >= balanceB4, "Prevent Self Rekt");
     }
 
-    function escrow_redeemFromExternalVault(uint256 sharesToRedeem, uint256 expectedAssets) public updateGhosts asTechops {
+    function escrow_redeemFromExternalVault(uint256 sharesToRedeem, uint256 expectedAssets)
+        public
+        updateGhosts
+        asTechops
+    {
         escrow.redeemFromExternalVault(sharesToRedeem, expectedAssets);
     }
 
@@ -58,7 +68,8 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
         uint256 expected = escrow.EXTERNAL_VAULT().previewRedeem(shares);
 
         uint256 balB4 = (escrow.ASSET_TOKEN()).balanceOf(address(escrow.FEE_RECIPIENT()));
-        escrow_claimProfit(); /// TODO: CHECK THIS BETTER, Something is off in the logic
+        escrow_claimProfit();
+        /// TODO: CHECK THIS BETTER, Something is off in the logic
         uint256 balAfter = (escrow.ASSET_TOKEN()).balanceOf(address(escrow.FEE_RECIPIENT()));
 
         // The test is a bound as some slippage loss can happen, we take the worst slippage and the exact amt and check against those
@@ -67,7 +78,7 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
         // NOTE: Since expected is the product of 2 round downs, we should receive more due to rounding
         // Also: The test assumes all profit is off of the shares
         // But in reality you can have profit from donations
-        // As such we perform this clamped check 
+        // As such we perform this clamped check
         gte(deltaFees, expected, "Recipient got at least expected");
         lte(deltaFees, amt, "Delta fees is at most profit");
 
@@ -76,10 +87,9 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
         lte(escrow.totalBalance(), balB4Escrow - expected, "Escrow balance decreases at least by expected");
 
         // Profit should be 0
-        eq(escrow.feeProfit(), 0, "Profit should be 0"); /// @audit is it ok for it to be non-zero?
+        eq(escrow.feeProfit(), 0, "Profit should be 0");
+        /// @audit is it ok for it to be non-zero?
     }
-
-    
 
     /// === BSM === ///
     function bsmTester_pause() public updateGhosts asTechops {
@@ -95,7 +105,9 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
     }
 
     function bsmTester_setMintingConfig(uint256 _mintingCapBPS) public updateGhosts asTechops {
-        rateLimitingConstraint.setMintingConfig(address(bsmTester), RateLimitingConstraint.MintingConfig(_mintingCapBPS, 0, false));
+        rateLimitingConstraint.setMintingConfig(
+            address(bsmTester), RateLimitingConstraint.MintingConfig(_mintingCapBPS, 0, false)
+        );
     }
 
     function bsmTester_unpause() public updateGhosts asTechops {
@@ -114,14 +126,14 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
         );
 
         uint256 balB4 = (escrow.ASSET_TOKEN()).balanceOf(address(escrow.FEE_RECIPIENT()));
-        
+
         vm.prank(address(techOpsMultisig));
         bsmTester.updateEscrow(address(escrow));
     }
-    
+
     // Stateless test
     /// @dev maybe the name is too long for medusa?
- /*   function doomsday_bsmTester_updateEscrow_always_works() public {
+    /*   function doomsday_bsmTester_updateEscrow_always_works() public {
         try this.bsmTester_updateEscrow() {
 
         } catch {
@@ -132,12 +144,11 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
     }  */
 
     function bsmTester_updateEscrow_always_works() public {
-        try this.bsmTester_updateEscrow() {
-
-        } catch {
+        try this.bsmTester_updateEscrow() {}
+        catch {
             t(false, "doomsday_bsmTester_updateEscrow_always_works");
         }
 
         revert("stateless");
-    } 
+    }
 }

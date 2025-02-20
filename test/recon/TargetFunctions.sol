@@ -14,7 +14,11 @@ import {PreviewTests} from "./targets/PreviewTests.sol";
 import {OpType} from "./BeforeAfter.sol";
 
 abstract contract TargetFunctions is AdminTargets, InlinedTests, ManagersTargets, PreviewTests {
-    function bsmTester_buyAsset(uint256 _ebtcAmountIn) public updateGhostsWithType(OpType.BUY_ASSET_WITH_EBTC) asActor {
+    function bsmTester_buyAsset(uint256 _ebtcAmountIn)
+        public
+        updateGhostsWithType(OpType.BUY_ASSET_WITH_EBTC)
+        asActor
+    {
         bsmTester.buyAsset(_ebtcAmountIn, _getActor());
     }
 
@@ -26,15 +30,15 @@ abstract contract TargetFunctions is AdminTargets, InlinedTests, ManagersTargets
         address[] memory actors = _getActors();
 
         // if a migration has happened, all depositAmount should be able to be withdrawn
-        if(hasMigrated) {
+        if (hasMigrated) {
             // setup adds in unbacked eBTC and underlying asset
             // so we just need to check that if we migrate, the actors can withdraw up to the depositAmount
             for (uint256 i = 0; i < actors.length; i++) {
                 address actor = actors[i];
                 uint256 depositAmount = escrow.totalAssetsDeposited();
                 uint256 actorBalance = mockEbtcToken.balanceOf(actor);
-                
-                if(depositAmount >= actorBalance) {
+
+                if (depositAmount >= actorBalance) {
                     vm.prank(actor);
                     bsmTester_buyAsset(actorBalance);
                 } else {
@@ -44,7 +48,11 @@ abstract contract TargetFunctions is AdminTargets, InlinedTests, ManagersTargets
             }
 
             // the depositAmount should be 0 after all the actors have withdrawn
-            eq(escrow.totalAssetsDeposited(), 0, "depositAmount should be 0 after all the actors have exchanged eBTC for underlying asset");
+            eq(
+                escrow.totalAssetsDeposited(),
+                0,
+                "depositAmount should be 0 after all the actors have exchanged eBTC for underlying asset"
+            );
         }
     }
 
@@ -53,7 +61,7 @@ abstract contract TargetFunctions is AdminTargets, InlinedTests, ManagersTargets
         externalVault.deposit(_amount, _getActor());
     }
 
-    function externalVault_withdraw(uint256 _amount) public updateGhosts asActor{
+    function externalVault_withdraw(uint256 _amount) public updateGhosts asActor {
         externalVault.withdraw(_amount, _getActor(), _getActor());
     }
 }

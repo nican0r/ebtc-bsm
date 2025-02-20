@@ -9,6 +9,7 @@ enum OpType {
     CLAIM, // This op resets the fee
     MIGRATE, // This op migrates the vault and resets the fee
     BUY_ASSET_WITH_EBTC // This op buys underlying asset with eBTC
+
 }
 
 // ghost variables for tracking state variable values before and after function calls

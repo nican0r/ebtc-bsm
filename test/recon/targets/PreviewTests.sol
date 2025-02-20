@@ -7,7 +7,6 @@ import {Properties} from "../Properties.sol";
 import {vm} from "@chimera/Hevm.sol";
 
 abstract contract PreviewTests is BaseTargetFunctions, Properties {
-
     function bsm_previewBuyAsset(uint256 _ebtcAmountIn) public stateless {
         uint256 amtOut = bsmTester.previewBuyAsset(_ebtcAmountIn);
 
@@ -25,5 +24,4 @@ abstract contract PreviewTests is BaseTargetFunctions, Properties {
 
         eq(realOut, amtOut, "bsm_previewSellAsset");
     }
-
 }

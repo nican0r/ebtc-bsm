@@ -14,7 +14,7 @@ import {BSMBase} from "../BSMTestBase.sol";
 abstract contract Setup is BaseSetup, BSMBase, ActorManager, AssetManager {
     address second_actor = address(0x411c3);
     bool hasMigrated;
-    
+
     // CONFIG
     bool ALLOWS_REKT = bool(true);
 
