@@ -50,7 +50,7 @@ contract ChainlinkAdapter is AggregatorV3Interface {
     function description() external view returns (string memory) {
         return "tBTC/BTC Chainlink Adapter";
     }
-    /**  @notice returns the smallest uint256 out of the 2 parameters
+    /** @notice returns the smallest uint256 out of the 2 parameters
     * @param _a first number to compare
     * @param _b second number to compare
     */
