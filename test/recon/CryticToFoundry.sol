@@ -153,10 +153,11 @@ function test_inlined_withdrawProfitTest_1() public {
  // forge test --match-test test_bsm_previewBuyAsset_1 -vvv 
 function test_bsm_previewBuyAsset_1() public {
 
-    bsmTester_sellAsset(1);
+    bsmTester_sellAsset(1e19);
 
     switch_asset(1);
 
+    // ERC4626 mock
     asset_mint(0xc7183455a4C133Ae270771860664b6B7ec320bB1,1240088199);
 
     equivalence_bsm_previewBuyAsset(1);

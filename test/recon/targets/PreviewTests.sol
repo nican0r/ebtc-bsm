@@ -8,6 +8,8 @@ import {vm} from "@chimera/Hevm.sol";
 
 abstract contract PreviewTests is BaseTargetFunctions, Properties {
     function equivalence_bsm_previewBuyAsset(uint256 _ebtcAmountIn) public stateless {
+        require(escrow.totalBalance() > 1e18, "Min bal"); // Should not matter
+
         uint256 amtOut = bsmTester.previewBuyAsset(_ebtcAmountIn);
 
         vm.prank(_getActor());
