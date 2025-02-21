@@ -11,7 +11,7 @@ import {TargetFunctions} from "../TargetFunctions.sol";
 /// Found with the fuzzer
 
 // forge test --match-contract TrophyToFoundry -vv
-contract TrophyToFoundry is Test, TargetFunctions, FoundryAsserts {
+contract CoreTrophyToFoundry is Test, TargetFunctions, FoundryAsserts {
     function setUp() public {
         setup();
 
