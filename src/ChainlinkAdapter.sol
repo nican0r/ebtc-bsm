@@ -16,10 +16,6 @@ contract ChainlinkAdapter is AggregatorV3Interface {
      */
     uint8 public constant MAX_DECIMALS = 18;
 
-    /// @notice PriceFeed always fetches current and previous rounds. It's ok to
-    /// hardcode round IDs as long as they are greater than 0.
-    uint80 public constant CURRENT_ROUND = 2;
-    uint80 public constant PREVIOUS_ROUND = 1;
     int256 internal constant ADAPTER_PRECISION = int256(10 ** decimals);
 
     /**
@@ -54,30 +50,19 @@ contract ChainlinkAdapter is AggregatorV3Interface {
     function description() external view returns (string memory) {
         return "tBTC/BTC Chainlink Adapter";
     }
-
+    /**  @notice returns the smallest uint256 out of the 2 parameters
+    * @param _a first number to compare
+    * @param _b second number to compare
+    */
     function _min(uint256 _a, uint256 _b) private pure returns (uint256) {
         return _a < _b ? _a : _b;
     }
 
+    /// @dev Uses the prices from the tBtc feed and the BTC feed to compute tBTC->BTC
     function _convertAnswer(int256 btcUsdPrice, int256 tBtcUsdPrice) private view returns (int256) {
         return
             (btcUsdPrice * TBTC_USD_PRECISION * ADAPTER_PRECISION) /
             (BTC_USD_PRECISION * tBtcUsdPrice);
-    }
-
-    function _getRoundData(
-        AggregatorV3Interface _feed,
-        uint80 _roundId
-    ) private view returns (int256 answer, uint256 updatedAt) {
-        uint80 feedRoundId;
-        if (_roundId == CURRENT_ROUND) {
-            (feedRoundId, answer, , updatedAt, ) = _feed.latestRoundData();
-        } else {
-            (uint80 latestRoundId, , , , ) = _feed.latestRoundData();
-            (feedRoundId, answer, , updatedAt, ) = _feed.getRoundData(latestRoundId - 1);
-        }
-        require(feedRoundId > 0);
-        require(answer > 0);
     }
 
     function _latestRoundData(
@@ -89,32 +74,23 @@ contract ChainlinkAdapter is AggregatorV3Interface {
         require(answer > 0);
     }
 
-    // getRoundData and latestRoundData should both raise "No data present"
-    // if they do not have data to report, instead of returning unset values
-    // which could be misinterpreted as actual reported values. //TODO?
+    /// @dev Needed because we inherit from AggregatorV3Interface
     function getRoundData(
         uint80 _roundId
     )
-        external
-        view
-        returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        )
-    {
-        require(_roundId == CURRENT_ROUND || _roundId == PREVIOUS_ROUND);
+    external
+    view
+    returns (
+        uint80 roundId,
+        int256 answer,
+        uint256 startedAt,
+        uint256 updatedAt,
+        uint80 answeredInRound
+    ){}
 
-        (int256 tBtcUsdPrice, uint256 tBtcUsdUpdatedAt) = _getRoundData(TBTC_USD_CL_FEED, _roundId);
-        (int256 btcUsdPrice, uint256 btcUsdUpdatedAt) = _getRoundData(BTC_USD_CL_FEED, _roundId);
-
-        roundId = _roundId;
-        updatedAt = _min(tBtcUsdUpdatedAt, btcUsdUpdatedAt);
-        answer = _convertAnswer(btcUsdPrice, tBtcUsdPrice);
-    }
-
+    // latestRoundData should raise "No data present"
+    // if this do not have data to report, instead of returning unset values
+    // which could be misinterpreted as actual reported values. //TODO?
     function latestRoundData()
         external
         view
@@ -129,7 +105,6 @@ contract ChainlinkAdapter is AggregatorV3Interface {
         (int256 tBtcUsdPrice, uint256 tBtcUsdUpdatedAt) = _latestRoundData(TBTC_USD_CL_FEED);
         (int256 btcUsdPrice, uint256 btcUsdUpdatedAt) = _latestRoundData(BTC_USD_CL_FEED);
 
-        roundId = CURRENT_ROUND;
         updatedAt = _min(tBtcUsdUpdatedAt, btcUsdUpdatedAt);
         answer = _convertAnswer(btcUsdPrice, tBtcUsdPrice);
     }
