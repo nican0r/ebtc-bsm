@@ -3,9 +3,9 @@
 pragma solidity ^0.8.0;
 
 import {Asserts} from "@chimera/Asserts.sol";
-import {Setup} from "./Setup.sol";
+import { BeforeAfter } from "./BeforeAfter.sol";
 
-abstract contract Properties is Setup, Asserts {
+abstract contract Properties is BeforeAfter, Asserts {
 
     function property_observe_always_same() public {
         uint256 valueFromActivePool = activePoolObserver.observe();
@@ -29,6 +29,17 @@ abstract contract Properties is Setup, Asserts {
             uint128 newLastObservedAverage = twapWeightedObserver.getData().lastObservedAverage;
 
             eq(newLastObservedAverage, cachedLastObservedAverage, "Observed value should be the same as the last observed average");
+        }
+    }
+
+    // Any time the accumulator increases, the time / acc should increase at the same rate
+    function property_time_accumulator_ratio_is_correct() public {
+        uint256 ratioDelta = (_after.lastObserved / _after.accumulator) - (_before.lastObserved / _before.accumulator);
+        uint256 accumulatorDelta = _after.accumulator - _before.accumulator;
+
+        // Precondition: the accumulator has increased
+        if(_before.accumulator < _after.accumulator) {
+            eq(accumulatorDelta, ratioDelta, "Accumulator should increase at the same rate as the time / acc");
         }
     }
 }
