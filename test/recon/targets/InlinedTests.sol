@@ -44,7 +44,6 @@ abstract contract InlinedTests is BaseTargetFunctions, Properties {
         escrow.onWithdraw(assetAmount);
         t(false, "always fail");
     }
-    // TODO: Revert always
 
     function escrow_onMigrateSource(address newEscrow) public stateless asActor {
         escrow.onMigrateSource(newEscrow);
