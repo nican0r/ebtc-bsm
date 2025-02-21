@@ -110,7 +110,7 @@ contract BaseEscrow is AuthNoOwner, IEscrow {
 
     function feeProfit() public view returns (uint256) {
         uint256 tb = _totalBalance();
-        if(tb > totalAssetsDeposited) { /// @audit Gas
+        if(tb > totalAssetsDeposited) {
             unchecked {
                 return tb - totalAssetsDeposited;
             }
