@@ -7,26 +7,26 @@ import {ChainlinkAdapter} from "../src/ChainlinkAdapter.sol";
 
 contract ChainlinkAdapterTests is Test {
 
-    MockAggregator internal usdBtcAggregator;
-    MockAggregator internal ethUsdAggregator;
+    MockAggregator internal usdtBtcAggregator;//TODO I think this is not right
+    MockAggregator internal btcUsdAggregator;
     ChainlinkAdapter internal chainlinkAdapter;
 
     function setUp() public {
-        usdBtcAggregator = new MockAggregator(8);
-        ethUsdAggregator = new MockAggregator(8);
-        chainlinkAdapter = new ChainlinkAdapter(usdBtcAggregator, ethUsdAggregator);
+        usdtBtcAggregator = new MockAggregator(8);
+        btcUsdAggregator = new MockAggregator(8);
+        chainlinkAdapter = new ChainlinkAdapter(usdtBtcAggregator, btcUsdAggregator);
     }
 
     function testGetLatestRound() public {
-        usdBtcAggregator.setLatestRoundId(110680464442257320247);
-        usdBtcAggregator.setPrevRoundId(110680464442257320246);
-        usdBtcAggregator.setPrice(3983705362408);
-        usdBtcAggregator.setUpdateTime(1706208946);
+        usdtBtcAggregator.setLatestRoundId(110680464442257320247);
+        usdtBtcAggregator.setPrevRoundId(110680464442257320246);
+        usdtBtcAggregator.setPrice(3983705362408);
+        usdtBtcAggregator.setUpdateTime(1706208946);
 
-        ethUsdAggregator.setLatestRoundId(110680464442257320665);
-        ethUsdAggregator.setPrevRoundId(110680464442257320664);
-        ethUsdAggregator.setPrice(221026137517);
-        ethUsdAggregator.setUpdateTime(1706208947);
+        btcUsdAggregator.setLatestRoundId(110680464442257320665);
+        btcUsdAggregator.setPrevRoundId(110680464442257320664);
+        btcUsdAggregator.setPrice(221026137517);
+        btcUsdAggregator.setUpdateTime(1706208947);
 
         (
             uint80 roundId,
