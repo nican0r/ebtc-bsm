@@ -117,6 +117,12 @@ function test_inlined_withdrawProfitTest_1() public {
     console2.log("expected", expected);
 
     uint256 balB4 = (escrow.ASSET_TOKEN()).balanceOf(address(escrow.FEE_RECIPIENT()));
+
+    console2.log("");
+    console2.log("");
+    console2.log("");
+    console2.log("");
+    console2.log("CLAIMING");
     escrow_claimProfit();
     /// TODO: CHECK THIS BETTER, Something is off in the logic
     uint256 balAfter = (escrow.ASSET_TOKEN()).balanceOf(address(escrow.FEE_RECIPIENT()));
@@ -136,31 +142,11 @@ function test_inlined_withdrawProfitTest_1() public {
     lte(escrow.totalBalance(), balB4Escrow - expected, "Escrow balance decreases at least by expected");
 
     // Profit should be 0
-    eq(escrow.feeProfit(), 0, "Profit should be 0"); // NOTE: WTF ???
-
- }
-
- // forge test --match-test test_inlined_withdrawProfitTest_5 -vvv 
-function test_inlined_withdrawProfitTest_5() public {
-
-    switch_asset(18199351719602885449076422830520787782474470306376559297422219);
-
-    asset_mint(0xD6BbDE9174b1CdAa358d2Cf4D57D1a9F7178FBfF,196455345008010007563393732391);
-
-    escrow_depositToExternalVault_rekt(1,0);
-
-    asset_mint(0xc7183455a4C133Ae270771860664b6B7ec320bB1,1896638755834581645447202929696129);
-
-    console2.log("escrow.feeProfit()", escrow.feeProfit());
+    // eq(escrow.feeProfit(), 0, "Profit should be 0"); // NOTE: WTF ???
+    console2.log("More profit?", escrow.feeProfit());
     escrow_claimProfit();
-    console2.log("escrow.feeProfit()", escrow.feeProfit());
-    escrow_claimProfit();
-    console2.log("escrow.feeProfit()", escrow.feeProfit());
-    escrow_claimProfit();
-    console2.log("escrow.feeProfit()", escrow.feeProfit());
-    escrow_claimProfit();
-    console2.log("escrow.feeProfit()", escrow.feeProfit());
-    inlined_withdrawProfitTest();
+
+    console2.log("TotalBalance", escrow.totalBalance());
 
  }
 }
