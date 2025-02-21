@@ -61,7 +61,7 @@ contract ChainlinkAdapter is AggregatorV3Interface {
     /// @dev Uses the prices from the tBtc feed and the BTC feed to compute tBTC->BTC
     function _convertAnswer(int256 btcUsdPrice, int256 tBtcUsdPrice) private view returns (int256) {
         return
-            (btcUsdPrice * TBTC_USD_PRECISION * ADAPTER_PRECISION) /
+            (btcUsdPrice * TBTC_USD_PRECISION * ADAPTER_PRECISION) / //TODO document precision role
             (BTC_USD_PRECISION * tBtcUsdPrice);
     }
 
