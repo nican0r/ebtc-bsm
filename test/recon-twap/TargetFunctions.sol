@@ -16,4 +16,16 @@ abstract contract TargetFunctions is BaseTargetFunctions, Properties {
     function twapWeightedObserver_update() public {
         twapWeightedObserver.update();
     }
+
+    function twapWeightedObserver_observe() public {
+        // cache the last observed average before updating for comparison
+        cachedLastObservedAverage = twapWeightedObserver.getData().lastObservedAverage;
+        twapWeightedObserver.observe();
+    }
+
+    function activePoolObserver_observe() public {
+        // cache the last observed average before updating for comparison
+        cachedLastObservedAverage = twapWeightedObserver.getData().lastObservedAverage;
+        activePoolObserver.observe();
+    }
 }
