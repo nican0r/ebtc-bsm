@@ -11,6 +11,8 @@ import {TwapWeightedObserver} from "./helpers/TwapWeightedObserver.sol";
 abstract contract Setup is BaseSetup {
     ActivePoolObserver activePoolObserver;
     TwapWeightedObserver twapWeightedObserver;
+
+    uint256 internal cachedLastObservedAverage;
     
     function setup() internal virtual override {
       twapWeightedObserver = new TwapWeightedObserver(100);
