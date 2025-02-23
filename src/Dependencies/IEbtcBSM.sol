@@ -9,10 +9,10 @@ interface IEbtcBSM {
     event AssetBought(uint256 ebtcAmountIn, uint256 assetAmountOut, uint256 feeAmount);
 
     function previewSellAsset(uint256 _assetAmountIn) external returns (uint256 _ebtcAmountOut);
-    function sellAsset(uint256 _assetAmountIn, address recipient) external returns (uint256 _ebtcAmountOut);
-    function sellAssetNoFee(uint256 _assetAmountIn, address recipient) external returns (uint256 _ebtcAmountOut);
+    function sellAsset(uint256 _assetAmountIn, address _recipient, uint256 _minOutAmount) external returns (uint256 _ebtcAmountOut);
+    function sellAssetNoFee(uint256 _assetAmountIn, address _recipient, uint256 _minOutAmount) external returns (uint256 _ebtcAmountOut);
     function previewBuyAsset(uint256 _ebtcAmountIn) external returns (uint256 _assetAmountOut);
-    function buyAsset(uint256 _ebtcAmountIn, address recipient) external returns (uint256 _assetAmountOut);
-    function buyAssetNoFee(uint256 _ebtcAmountIn, address recipient) external returns (uint256 _assetAmountOut);
+    function buyAsset(uint256 _ebtcAmountIn, address _recipient, uint256 _minOutAmount) external returns (uint256 _assetAmountOut);
+    function buyAssetNoFee(uint256 _ebtcAmountIn, address _recipient, uint256 _minOutAmount) external returns (uint256 _assetAmountOut);
     function totalMinted() external view returns (uint256);
 }

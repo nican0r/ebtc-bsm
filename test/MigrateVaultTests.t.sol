@@ -39,10 +39,10 @@ contract MigrateAssetVaultTest is BSMTestBase {
         uint256 assetAmount = 3e18;
         uint256 endAssetAmount = totalAssets - assetAmount;
         vm.prank(testMinter);
-        bsmTester.sellAsset(5e18, testMinter);
+        bsmTester.sellAsset(5e18, testMinter, 0);
 
         vm.prank(testBuyer);
-        assertEq(bsmTester.buyAsset(assetAmount, testBuyer), assetAmount);
+        assertEq(bsmTester.buyAsset(assetAmount, testBuyer, 0), assetAmount);
 
         uint256 prevTotalDeposit = escrow.totalAssetsDeposited();
         uint256 prevBalance = escrow.totalBalance();
@@ -69,7 +69,7 @@ contract MigrateAssetVaultTest is BSMTestBase {
         bsmTester.setFeeToSell(100);
 
         vm.prank(testMinter);
-        assertEq(bsmTester.sellAsset(1.01e18, testMinter), 1e18);
+        assertEq(bsmTester.sellAsset(1.01e18, testMinter, 0), 1e18);
 
         uint256 profit = escrow.feeProfit();
         uint256 prevFeeRecipientBalance = escrow.ASSET_TOKEN().balanceOf(escrow.FEE_RECIPIENT());
@@ -102,14 +102,14 @@ contract MigrateAssetVaultTest is BSMTestBase {
         uint256 assetAmount = 2e18;
         // operations including selling, and buying assets, as well as external lending
         vm.prank(techOpsMultisig);
-        bsmTester.sellAsset(assetAmount, address(this));
+        bsmTester.sellAsset(assetAmount, address(this), 0);
 
         uint256 shares = externalVault.previewDeposit(assetAmount);
         vm.prank(techOpsMultisig);
         escrow.depositToExternalVault(assetAmount, shares);
 
         vm.prank(testBuyer);
-        bsmTester.buyAsset(assetAmount / 2, testBuyer);
+        bsmTester.buyAsset(assetAmount / 2, testBuyer, 0);
 
         assertGt(escrow.totalAssetsDeposited(), 0);
         assertGt(externalVault.balanceOf(address(escrow)), 0);
@@ -135,7 +135,7 @@ contract MigrateAssetVaultTest is BSMTestBase {
 
         // operations including selling, and buying assets, as well as external lending
         vm.prank(techOpsMultisig);
-        bsmTester.sellAsset(assetAmount, address(this));
+        bsmTester.sellAsset(assetAmount, address(this), 0);
         uint256 profit = escrow.feeProfit();
 
         assertGt(profit, 0);
@@ -145,7 +145,7 @@ contract MigrateAssetVaultTest is BSMTestBase {
         escrow.depositToExternalVault(assetAmount, shares);
 
         vm.prank(testBuyer);
-        bsmTester.buyAsset(assetAmount / 2, testBuyer);
+        bsmTester.buyAsset(assetAmount / 2, testBuyer, 0);
 
         assertGt(escrow.totalAssetsDeposited(), 0);
         assertGt(externalVault.balanceOf(address(escrow)), 0);

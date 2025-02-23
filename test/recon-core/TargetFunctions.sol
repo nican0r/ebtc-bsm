@@ -19,11 +19,11 @@ abstract contract TargetFunctions is AdminTargets, InlinedTests, ManagersTargets
         updateGhostsWithType(OpType.BUY_ASSET_WITH_EBTC)
         asActor
     {
-        bsmTester.buyAsset(_ebtcAmountIn, _getActor());
+        bsmTester.buyAsset(_ebtcAmountIn, _getActor(), 0);
     }
 
     function bsmTester_sellAsset(uint256 _assetAmountIn) public updateGhosts asActor {
-        bsmTester.sellAsset(_assetAmountIn, _getActor());
+        bsmTester.sellAsset(_assetAmountIn, _getActor(), 0);
     }
 
     function inlined_migration_causes_no_loss() public stateless {

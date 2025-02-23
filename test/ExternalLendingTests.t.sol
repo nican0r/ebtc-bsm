@@ -165,8 +165,26 @@ contract ExternalLendingTests is BSMTestBase {
         depositToExternalVault(ASSET_AMOUNT, shares + 1);
     }
 
+    function testExternalVaultLossFailsSlippageCheck() public {
+        sellAsset();
+
+        depositToExternalVault(ASSET_AMOUNT, 0);
+
+        // 50% external vault loss
+        vm.prank(address(newExternalVault));
+        mockAssetToken.transfer(vm.addr(0xdead), 0.5e18);
+
+        // revert with 50% loss
+        vm.expectRevert(abi.encodeWithSelector(EbtcBSM.BelowExpectedMinOutAmount.selector, ASSET_AMOUNT, 0.5e18));
+        vm.prank(testBuyer);
+        bsmTester.buyAsset(ASSET_AMOUNT, testBuyer, ASSET_AMOUNT);
+
+        vm.prank(testBuyer);
+        assertEq(bsmTester.buyAsset(ASSET_AMOUNT, testBuyer, ASSET_AMOUNT / 2), ASSET_AMOUNT / 2);
+    }
+
     function sellAsset() internal prankTechOpsMultisig {
-        bsmTester.sellAsset(ASSET_AMOUNT, address(this));
+        bsmTester.sellAsset(ASSET_AMOUNT, address(this), 0);
     }
 
     function depositToExternalVault(uint256 _assetsToDeposit, uint256 _minShares) internal prankTechOpsMultisig {
