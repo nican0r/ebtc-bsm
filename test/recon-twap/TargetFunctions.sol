@@ -10,7 +10,7 @@ abstract contract TargetFunctions is BaseTargetFunctions, Properties {
 
     function twapWeightedObserver_setValueAndUpdate(uint128 _value) public {
         // clamp value using the max possible eBTC debt in the ActivePool
-        _value %= 21 * 10e24;
+        _value %= 21e24;
 
         // require that the value is greater than 0 or else it would cause false positives in the doomsday properties
         require(_value > 0, "Value must be greater than 0");
