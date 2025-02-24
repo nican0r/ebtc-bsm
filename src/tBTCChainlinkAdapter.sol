@@ -4,10 +4,10 @@ pragma solidity ^0.8.25;
 import {AggregatorV3Interface} from "./Dependencies/AggregatorV3Interface.sol";
 
 /**
- * @title ChainlinkAdapter contract
+ * @title tBTCChainlinkAdapter contract
  * @notice Helps convert tBTC to BTC prices by combining two different oracle readings.
  */
-contract ChainlinkAdapter is AggregatorV3Interface {
+contract tBTCChainlinkAdapter is AggregatorV3Interface {
     uint8 public constant override decimals = 18;
     uint256 public constant override version = 1;
 

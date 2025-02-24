@@ -2,20 +2,20 @@
 pragma solidity ^0.8.25;
 
 import "forge-std/Test.sol";
-import {ChainlinkAdapter, AggregatorV3Interface} from "../src/ChainlinkAdapter.sol";
+import {tBTCChainlinkAdapter, AggregatorV3Interface} from "../src/tBTCChainlinkAdapter.sol";
 import {MockAssetOracle} from "./mocks/MockAssetOracle.sol";
 
 
-contract ChainlinkAdapterTests is Test {
+contract tBTCChainlinkAdapterTests is Test {
 
     MockAssetOracle internal usdtBtcAggregator;
     MockAssetOracle internal btcUsdAggregator;
-    ChainlinkAdapter internal chainlinkAdapter;
+    tBTCChainlinkAdapter internal tBTCchainlinkAdapter;
 
     function setUp() public {
         usdtBtcAggregator = new MockAssetOracle(8);
         btcUsdAggregator = new MockAssetOracle(8);
-        chainlinkAdapter = new ChainlinkAdapter(usdtBtcAggregator, btcUsdAggregator);
+        tBTCchainlinkAdapter = new tBTCChainlinkAdapter(usdtBtcAggregator, btcUsdAggregator);
     }
 
     function testGetLatestRound() public {
@@ -35,7 +35,7 @@ contract ChainlinkAdapterTests is Test {
             uint256 startedAt,
             uint256 updatedAt,
             uint80 answeredInRound
-        ) = chainlinkAdapter.latestRoundData();
+        ) = tBTCchainlinkAdapter.latestRoundData();
 
         assertEq(answer, 55482551396170026);
         assertEq(updatedAt, 1706208946);
@@ -54,7 +54,7 @@ contract ChainlinkAdapterTests is Test {
         (
             ,
             int256 answer,,,
-        ) = chainlinkAdapter.latestRoundData();
+        ) = tBTCchainlinkAdapter.latestRoundData();
 
         assertEq(answer, 500000000000000000);// (tBTC/BTC) * ADAPTER_PRECISION
 
@@ -70,7 +70,7 @@ contract ChainlinkAdapterTests is Test {
         (
             ,
             answer,,,
-        ) = chainlinkAdapter.latestRoundData();
+        ) = tBTCchainlinkAdapter.latestRoundData();
 
         assertEq(answer, 2000000000000000000);// (tBTC/BTC) * ADAPTER_PRECISION
     }
@@ -84,7 +84,7 @@ contract ChainlinkAdapterTests is Test {
         address tBtcUsdFeed = 0x8350b7De6a6a2C1368E7D4Bd968190e13E354297;
         address btcUsdFeed = 0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c;
         
-        ChainlinkAdapter adapter = new ChainlinkAdapter(AggregatorV3Interface(tBtcUsdFeed), AggregatorV3Interface(btcUsdFeed));
+        tBTCChainlinkAdapter adapter = new tBTCChainlinkAdapter(AggregatorV3Interface(tBtcUsdFeed), AggregatorV3Interface(btcUsdFeed));
         
         (uint80 roundID, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound) = adapter.latestRoundData();
         emit log_named_int("Converted tBTC to BTC price", answer);
