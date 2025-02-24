@@ -107,7 +107,7 @@ contract EbtcBSM is IEbtcBSM, Pausable, Initializable, AuthNoOwner {
     /** @notice Checks for fees and minting constrains to determine the eBTC amount out.
     * @param _assetAmountIn the total amount intended to be deposited
     * @param _feeAmount the fee to be paid
-    * @return Returns the estimated eBTC to sell
+    * @return _ebtcAmountOut Returns the estimated eBTC to sell
     */
     function _previewSellAsset(
         uint256 _assetAmountIn,
@@ -120,7 +120,6 @@ contract EbtcBSM is IEbtcBSM, Pausable, Initializable, AuthNoOwner {
     /** @notice Calculates the net asset amount that can be bought with a given amount of eBTC
     * @param _ebtcAmountIn the total amount intended to be deposited
     * @param _feeAmount the fee to be paid
-    * @return Returns the estimated asset to buy after fees
     */
     function _previewBuyAsset(
         uint256 _ebtcAmountIn,

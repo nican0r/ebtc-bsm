@@ -42,8 +42,6 @@ contract ActivePoolObserver {
      * @dev Utilizes the accumulator difference and the time passed to calculate the average.
      *      Uses the formula: (newAcc - acc0) / (now - t0).
      * @param data The packed data containing the last observed cumulative value and timestamp.
-     * @return avgValue The updated average value.
-     * @return latestAcc The latest accumulator value from the observer.
     */
     function _checkUpdatePeriod(ITwapWeightedObserver.PackedData memory data, uint256 period) internal view returns (bool) {
         return block.timestamp >= (data.lastObserved + period);
