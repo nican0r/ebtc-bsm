@@ -106,9 +106,20 @@ contract ERC4626Escrow is BaseEscrow, IERC4626Escrow {
     /// @param _assetAmount The amount of assets for which to preview the withdrawal
     /// @return The previewed withdrawable amount
     function _previewWithdraw(uint256 _assetAmount) internal override view returns (uint256) {
-        /// @dev using convertToShares + previewRedeem instead of previewWithdraw to round down
-        uint256 shares = _clampShares(EXTERNAL_VAULT.convertToShares(_assetAmount));
-        return EXTERNAL_VAULT.previewRedeem(shares);
+        uint256 liquidBalance = super._totalBalance();        
+
+        if (_assetAmount > liquidBalance) {
+            uint256 deficit;
+            unchecked {
+                deficit = _assetAmount - liquidBalance;
+            }
+
+            /// @dev using convertToShares + previewRedeem instead of previewWithdraw to round down
+            uint256 shares = _clampShares(EXTERNAL_VAULT.convertToShares(deficit));
+            return liquidBalance + EXTERNAL_VAULT.previewRedeem(shares);
+        } else {
+            return _assetAmount;
+        }
     }
 
     /// @notice Prepares the contract for migration by redeeming all shares from the external vault
