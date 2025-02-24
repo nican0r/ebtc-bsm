@@ -4,7 +4,6 @@ pragma solidity ^0.8.25;
 import "@openzeppelin/contracts/mocks/token/ERC4626Mock.sol";
 import {ERC4626Escrow} from "../src/ERC4626Escrow.sol";
 import "./BSMTestBase.sol";
-// TODO check totalBalance before and after external len ding
 
 contract ExternalLendingTests is BSMTestBase {
     ERC4626Mock internal newExternalVault;
