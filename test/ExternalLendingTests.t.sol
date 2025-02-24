@@ -179,6 +179,8 @@ contract ExternalLendingTests is BSMTestBase {
         vm.prank(testBuyer);
         bsmTester.buyAsset(ASSET_AMOUNT, testBuyer, ASSET_AMOUNT);
 
+        assertEq(bsmTester.previewBuyAsset(ASSET_AMOUNT), ASSET_AMOUNT / 2);
+
         vm.prank(testBuyer);
         assertEq(bsmTester.buyAsset(ASSET_AMOUNT, testBuyer, ASSET_AMOUNT / 2), ASSET_AMOUNT / 2);
     }

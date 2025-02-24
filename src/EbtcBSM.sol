@@ -181,6 +181,7 @@ contract EbtcBSM is IEbtcBSM, Pausable, Initializable, AuthNoOwner {
         );
         escrow.onDeposit(_ebtcAmountOut); // ebtcMinted = _assetAmountIn - fee
 
+        // slippage check
         if (_ebtcAmountOut < _minOutAmount) {
             revert BelowExpectedMinOutAmount(_minOutAmount, _ebtcAmountOut);
         }
@@ -211,6 +212,7 @@ contract EbtcBSM is IEbtcBSM, Pausable, Initializable, AuthNoOwner {
 
         _assetAmountOut = redeemedAmount - _feeAmount;
 
+        // slippage check
         if (_assetAmountOut < _minOutAmount) {
             revert BelowExpectedMinOutAmount(_minOutAmount, _assetAmountOut);
         }

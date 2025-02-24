@@ -174,6 +174,12 @@ contract BSMBase {
         );
         setRoleCapability(
             15,
+            address(oraclePriceConstraint),
+            oraclePriceConstraint.setOracleFreshness.selector,
+            true
+        );
+        setRoleCapability(
+            15,
             address(rateLimitingConstraint),
             rateLimitingConstraint.setMintingConfig.selector,
             true

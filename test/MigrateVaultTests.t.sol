@@ -163,4 +163,26 @@ contract MigrateAssetVaultTest is BSMTestBase {
         assertEq(externalVault.balanceOf(address(escrow)), 0);
         assertEq(externalVault.balanceOf(address(newEscrow)), escrowBalance);
     }
+
+    function testMigrationWithExternalVaultLoss() public {
+        uint256 assetAmount = 2e18;
+
+        // operations including selling, and buying assets, as well as external lending
+        vm.prank(techOpsMultisig);
+        bsmTester.sellAsset(assetAmount, address(this), 0);
+
+        uint256 shares = externalVault.previewDeposit(assetAmount);
+        vm.prank(techOpsMultisig);
+        escrow.depositToExternalVault(assetAmount, shares);
+
+        // 50% external vault loss
+        vm.prank(address(externalVault));
+        mockAssetToken.transfer(vm.addr(0xdead), assetAmount / 2);
+
+        vm.prank(techOpsMultisig);
+        bsmTester.updateEscrow(address(newEscrow));
+
+        assertEq(mockAssetToken.balanceOf(address(newEscrow)), assetAmount / 2);
+        assertEq(newEscrow.totalAssetsDeposited(), assetAmount);
+    }
 }
