@@ -52,10 +52,19 @@ contract ERC4626Escrow is BaseEscrow, IERC4626Escrow {
         return redeemedAmount;
     }
 
+    /// @notice make sure we are not trying to redeem more shares than we have
+    function _clampShares(uint256 _shares) internal view returns (uint256) {
+        uint256 totalShares = EXTERNAL_VAULT.balanceOf(address(this));
+        if (_shares > totalShares) {
+            return totalShares;
+        }
+        return _shares;
+    }
+
     /// @notice Ensures sufficient liquidity is available by redeeming assets from the external vault if necessary
     /// @param _amountRequired The amount of assets required
-    /// @return amountRedeemed The actual amount of assets redeemed
-    function _ensureLiquidity(uint256 _amountRequired) private returns (uint256 amountRedeemed) {
+    /// @return _amountRedeemed The actual amount of assets redeemed
+    function _ensureLiquidity(uint256 _amountRequired) private returns (uint256 _amountRedeemed) {
         /// @dev super._totalBalance() returns asset balance for this contract
         uint256 liquidBalance = super._totalBalance();
 
@@ -66,15 +75,20 @@ contract ERC4626Escrow is BaseEscrow, IERC4626Escrow {
             }
             // using convertToShares here because it rounds down
             // this prevents the vault from taking on losses
-            uint256 shares = EXTERNAL_VAULT.convertToShares(deficit);
-            uint256 balanceBefore = ASSET_TOKEN.balanceOf(address(this));
-            EXTERNAL_VAULT.redeem(shares, address(this), address(this));
-            uint256 balanceAfter = ASSET_TOKEN.balanceOf(address(this));
+            uint256 shares = _clampShares(EXTERNAL_VAULT.convertToShares(deficit));
+            uint256 redeemed;
+            /// @dev avoid redeeming 0 shares
+            if (shares > 0) {
+                uint256 balanceBefore = ASSET_TOKEN.balanceOf(address(this));
+                EXTERNAL_VAULT.redeem(shares, address(this), address(this));
+                uint256 balanceAfter = ASSET_TOKEN.balanceOf(address(this));
+                redeemed = balanceAfter - balanceBefore;
+            }
             // amountRedeemed can be less than deficit because of rounding
-            amountRedeemed = liquidBalance + (balanceAfter - balanceBefore);
+            _amountRedeemed = liquidBalance + redeemed;
         } else {
             // We have liquid amount so we return it
-            amountRedeemed = _amountRequired;
+            _amountRedeemed = _amountRequired;
         }
     }
 
@@ -97,9 +111,20 @@ contract ERC4626Escrow is BaseEscrow, IERC4626Escrow {
     /// @param _assetAmount The amount of assets for which to preview the withdrawal
     /// @return The previewed withdrawable amount
     function _previewWithdraw(uint256 _assetAmount) internal override view returns (uint256) {
-        /// @dev using convertToShares + previewRedeem instead of previewWithdraw to round down
-        uint256 shares = EXTERNAL_VAULT.convertToShares(_assetAmount);
-        return EXTERNAL_VAULT.previewRedeem(shares);
+        uint256 liquidBalance = super._totalBalance();        
+
+        if (_assetAmount > liquidBalance) {
+            uint256 deficit;
+            unchecked {
+                deficit = _assetAmount - liquidBalance;
+            }
+
+            /// @dev using convertToShares + previewRedeem instead of previewWithdraw to round down
+            uint256 shares = _clampShares(EXTERNAL_VAULT.convertToShares(deficit));
+            return liquidBalance + (shares > 0 ? EXTERNAL_VAULT.previewRedeem(shares) : 0);
+        } else {
+            return _assetAmount;
+        }
     }
 
     /// @notice Prepares the contract for migration by redeeming all shares from the external vault

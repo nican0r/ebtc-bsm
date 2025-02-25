@@ -7,7 +7,7 @@ import {RateLimitingConstraint} from"../src/RateLimitingConstraint.sol";
 import {IMintingConstraint} from "../src/Dependencies/IMintingConstraint.sol";
 
 contract SellAssetTests is BSMTestBase {
-    function testBuyEbtcSuccess() public {
+    function testSellAssetSuccess() public {
         assertEq(mockAssetToken.balanceOf(testMinter), 10e18);
         assertEq(mockEbtcToken.balanceOf(testMinter), 0);
 
@@ -17,7 +17,7 @@ contract SellAssetTests is BSMTestBase {
         emit IEbtcBSM.AssetSold(1e18, 1e18, fee);
 
         vm.prank(testMinter);
-        assertEq(bsmTester.sellAsset(1e18, testMinter), 1e18);
+        assertEq(bsmTester.sellAsset(1e18, testMinter, 0), 1e18);
         
         assertEq(mockAssetToken.balanceOf(testMinter), 9e18);
         assertEq(mockEbtcToken.balanceOf(testMinter), 1e18);
@@ -28,7 +28,7 @@ contract SellAssetTests is BSMTestBase {
         );
     }
 
-    function testBuyEbtcFeeSuccess() public {
+    function testSellAssetFeeSuccess() public {
         // 1% fee
         vm.prank(techOpsMultisig);
         bsmTester.setFeeToSell(100);
@@ -39,7 +39,7 @@ contract SellAssetTests is BSMTestBase {
         emit IEbtcBSM.AssetSold(1.01e18, 1e18, 0.01e18);
 
         vm.prank(testMinter);
-        assertEq(bsmTester.sellAsset(1.01e18, testMinter), 1e18);
+        assertEq(bsmTester.sellAsset(1.01e18, testMinter, 0), 1e18);
 
         assertEq(mockAssetToken.balanceOf(testMinter), 8.99e18);
 
@@ -58,7 +58,7 @@ contract SellAssetTests is BSMTestBase {
         assertEq(escrow.feeProfit(), 0);
     }
 
-    function testBuyEbtcFeeAuthorizedUser() public {
+    function testSellAssetFeeAuthorizedUser() public {
         vm.prank(techOpsMultisig);
         bsmTester.setFeeToSell(100);
 
@@ -66,10 +66,10 @@ contract SellAssetTests is BSMTestBase {
         emit IEbtcBSM.AssetSold(1.01e18, 1.01e18, 0);
 
         vm.prank(testAuthorizedUser);
-        assertEq(bsmTester.sellAssetNoFee(1.01e18, testAuthorizedUser), 1.01e18);
+        assertEq(bsmTester.sellAssetNoFee(1.01e18, testAuthorizedUser, 0), 1.01e18);
     }
 
-    function testBuyEbtcFailAboveCap() public {
+    function testSellAssetFailAboveCap() public {
         uint256 mintingCapBPS = rateLimitingConstraint.getMintingConfig(address(bsmTester)).relativeCapBPS;
 
         uint256 amountToMint = (mockEbtcToken.totalSupply() *
@@ -92,10 +92,10 @@ contract SellAssetTests is BSMTestBase {
                 )
             )
         );
-        bsmTester.sellAsset(amountToMint, testMinter);
+        bsmTester.sellAsset(amountToMint, testMinter, 0);
     }
 
-    function testBuyEbtcFailBadPrice() public {
+    function testSellAssetFailBadPrice() public {
         vm.expectRevert("Auth: UNAUTHORIZED");
         vm.prank(testMinter);
         oraclePriceConstraint.setMinPrice(9000);
@@ -121,10 +121,10 @@ contract SellAssetTests is BSMTestBase {
             )
         );
         vm.prank(testMinter);
-        bsmTester.sellAsset(1e18, testMinter);
+        bsmTester.sellAsset(1e18, testMinter, 0);
     }
 
-    function testBuyEbtcOracleTooOld() public {
+    function testSellAssetOracleTooOld() public {
 
         uint256 nowTime = block.timestamp;
 
@@ -132,10 +132,10 @@ contract SellAssetTests is BSMTestBase {
 
         vm.expectRevert(abi.encodeWithSelector(OraclePriceConstraint.StaleOraclePrice.selector, nowTime));
         vm.prank(testMinter);
-        bsmTester.sellAsset(1e18, testMinter);
+        bsmTester.sellAsset(1e18, testMinter, 0);
     }
 
-    function testBuyEbtcFailPaused() public {
+    function testSellAssetFailPaused() public {
         vm.expectRevert("Auth: UNAUTHORIZED");
         vm.prank(testMinter);
         bsmTester.pause();
@@ -145,7 +145,7 @@ contract SellAssetTests is BSMTestBase {
 
         vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
         vm.prank(testMinter);
-        bsmTester.sellAsset(1e18, testMinter);
+        bsmTester.sellAsset(1e18, testMinter, 0);
 
         vm.expectRevert("Auth: UNAUTHORIZED");
         vm.prank(testMinter);
@@ -154,6 +154,21 @@ contract SellAssetTests is BSMTestBase {
         vm.prank(techOpsMultisig);
         bsmTester.unpause();
 
-        testBuyEbtcSuccess();
+        testSellAssetSuccess();
+    }
+
+    function testSellAssetFailSlippageCheck() public {
+        // 1% fee
+        vm.prank(techOpsMultisig);
+        bsmTester.setFeeToSell(100);
+
+        // TEST: fail if actual < expected
+        vm.expectRevert(abi.encodeWithSelector(EbtcBSM.BelowExpectedMinOutAmount.selector, 1.01e18, 1e18));
+        vm.prank(testMinter);
+        bsmTester.sellAsset(1.01e18, testMinter, 1.01e18);
+
+        // TEST: pass if actual >= expected
+        vm.prank(testMinter);
+        assertEq(bsmTester.sellAsset(1.01e18, testMinter, 1e18), 1e18);
     }
 }

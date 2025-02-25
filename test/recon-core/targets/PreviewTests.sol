@@ -13,7 +13,7 @@ abstract contract PreviewTests is BaseTargetFunctions, Properties {
         uint256 amtOut = bsmTester.previewBuyAsset(_ebtcAmountIn);
 
         vm.prank(_getActor());
-        uint256 realOut = bsmTester.buyAsset(_ebtcAmountIn, _getActor());
+        uint256 realOut = bsmTester.buyAsset(_ebtcAmountIn, _getActor(), 0);
 
         eq(realOut, amtOut, "equivalence_bsm_previewBuyAsset");
     }
@@ -22,7 +22,7 @@ abstract contract PreviewTests is BaseTargetFunctions, Properties {
         uint256 amtOut = bsmTester.previewSellAsset(_assetAmountIn);
 
         vm.prank(_getActor());
-        uint256 realOut = bsmTester.sellAsset(_assetAmountIn, _getActor());
+        uint256 realOut = bsmTester.sellAsset(_assetAmountIn, _getActor(), 0);
 
         eq(realOut, amtOut, "equivalence_bsm_previewSellAsset");
     }

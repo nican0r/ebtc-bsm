@@ -51,6 +51,15 @@ contract EbtcBSM is IEbtcBSM, Pausable, Initializable, AuthNoOwner {
     /// @notice Error for when there are insufficient asset tokens available
     error InsufficientAssetTokens(uint256 required, uint256 available);
 
+    /// @notice Error for when the actual output amount is below the expected amount
+    error BelowExpectedMinOutAmount(uint256 expected, uint256 actual);
+
+    /// @notice Error for when the amount passed into sellAsset or buyAsset is zero
+    error ZeroAmount();
+
+    /// @notice Error for when the recipient address is the zero address
+    error InvalidRecipientAddress();
+
     /** @notice Constructs the EbtcBSM contract
     * @param _assetToken Address of the underlying asset token
     * @param _oraclePriceConstraint Address of the oracle price constraint
@@ -104,11 +113,6 @@ contract EbtcBSM is IEbtcBSM, Pausable, Initializable, AuthNoOwner {
         return (_amount * fee) / (fee + BPS);
     }
 
-    /** @notice Checks for fees and minting constrains to determine the eBTC amount out.
-    * @param _assetAmountIn the total amount intended to be deposited
-    * @param _feeAmount the fee to be paid
-    * @return Returns the estimated eBTC to sell
-    */
     function _previewSellAsset(
         uint256 _assetAmountIn,
         uint256 _feeAmount
@@ -117,11 +121,6 @@ contract EbtcBSM is IEbtcBSM, Pausable, Initializable, AuthNoOwner {
         _checkMintingConstraints(_ebtcAmountOut);
     }
 
-    /** @notice Calculates the net asset amount that can be bought with a given amount of eBTC
-    * @param _ebtcAmountIn the total amount intended to be deposited
-    * @param _feeAmount the fee to be paid
-    * @return Returns the estimated asset to buy after fees
-    */
     function _previewBuyAsset(
         uint256 _ebtcAmountIn,
         uint256 _feeAmount
@@ -169,17 +168,16 @@ contract EbtcBSM is IEbtcBSM, Pausable, Initializable, AuthNoOwner {
         }
     }
 
-    /**
-     * @notice Allows users to mint eBTC by depositing asset tokens
-     * @param _assetAmountIn Amount of asset tokens to deposit
-     * @param _recipient custom recipient for the minted eBTC
-     * @return _ebtcAmountOut Amount of eBTC tokens minted to the user
-     */
+    /// @notice Internal sellAsset function with an expected fee amount
     function _sellAsset(
         uint256 _assetAmountIn,
         address _recipient,
-        uint256 _feeAmount
+        uint256 _feeAmount,
+        uint256 _minOutAmount
     ) internal returns (uint256 _ebtcAmountOut) {
+        if (_assetAmountIn == 0) revert ZeroAmount();
+        if (_recipient == address(0)) revert InvalidRecipientAddress();
+    
         _ebtcAmountOut = _assetAmountIn - _feeAmount;
 
         _checkMintingConstraints(_ebtcAmountOut);
@@ -192,6 +190,11 @@ contract EbtcBSM is IEbtcBSM, Pausable, Initializable, AuthNoOwner {
         );
         escrow.onDeposit(_ebtcAmountOut); // ebtcMinted = _assetAmountIn - fee
 
+        // slippage check
+        if (_ebtcAmountOut < _minOutAmount) {
+            revert BelowExpectedMinOutAmount(_minOutAmount, _ebtcAmountOut);
+        }
+
         totalMinted += _ebtcAmountOut;
 
         EBTC_TOKEN.mint(_recipient, _ebtcAmountOut);
@@ -199,19 +202,16 @@ contract EbtcBSM is IEbtcBSM, Pausable, Initializable, AuthNoOwner {
         emit AssetSold(_assetAmountIn, _ebtcAmountOut, _feeAmount);
     }
 
-    /**
-     * @notice Allows users to buy BSM owned asset tokens by burning their eBTC
-     * @dev This function assumes the exchange rate between the asset token and eBTC is 1:1
-     *
-     * @param _ebtcAmountIn Amount of eBTC tokens to burn
-     * @param _recipient custom recipient for the asset
-     * @return _assetAmountOut Amount of asset tokens sent to user
-     */
+    /// @notice Internal buyAsset function with an expected fee amount
     function _buyAsset(
         uint256 _ebtcAmountIn,
         address _recipient,
-        uint256 _feeAmount
+        uint256 _feeAmount,
+        uint256 _minOutAmount
     ) internal returns (uint256 _assetAmountOut) {
+        if (_ebtcAmountIn == 0) revert ZeroAmount();
+        if (_recipient == address(0)) revert InvalidRecipientAddress();
+
         _checkTotalAssetsDeposited(_ebtcAmountIn);
 
         EBTC_TOKEN.burn(msg.sender, _ebtcAmountIn);
@@ -223,45 +223,76 @@ contract EbtcBSM is IEbtcBSM, Pausable, Initializable, AuthNoOwner {
         );
 
         _assetAmountOut = redeemedAmount - _feeAmount;
-        // INVARIANT: _assetAmountOut <= _ebtcAmountIn
-        ASSET_TOKEN.safeTransferFrom(
-            address(escrow),
-            _recipient,
-            _assetAmountOut
-        );
+
+        // slippage check
+        if (_assetAmountOut < _minOutAmount) {
+            revert BelowExpectedMinOutAmount(_minOutAmount, _assetAmountOut);
+        }
+
+        if (_assetAmountOut > 0) {
+            // INVARIANT: _assetAmountOut <= _ebtcAmountIn
+            ASSET_TOKEN.safeTransferFrom(
+                address(escrow),
+                _recipient,
+                _assetAmountOut
+            );
+        }
 
         emit AssetBought(_ebtcAmountIn, _assetAmountOut, _feeAmount);
     }
 
-    /// @dev Calls the internal function _previewSellAsset
+    /** 
+     * @notice Canculates the amount of eBTC minted for a given amount of asset tokens accounting
+     * for all minting constraints
+     * @param _assetAmountIn the total amount intended to be deposited
+     * @return _ebtcAmountOut the estimated eBTC to mint after fees
+     */
     function previewSellAsset(
         uint256 _assetAmountIn
     ) external returns (uint256 _ebtcAmountOut) {
         return _previewSellAsset(_assetAmountIn, _feeToSell(_assetAmountIn));
     }
 
-    /// @dev Calls the internal function _previewBuyAsset
+    /** 
+     * @notice Calculates the net asset amount that can be bought with a given amount of eBTC
+     * @param _ebtcAmountIn the total amount intended to be deposited
+     * @return _assetAmountOut the estimated asset to buy after fees
+     */
     function previewBuyAsset(
         uint256 _ebtcAmountIn
     ) external returns (uint256 _assetAmountOut) {
         return _previewBuyAsset(_ebtcAmountIn, _feeToBuy(_ebtcAmountIn));
     }
 
-    /// @dev Calls the internal function _sellAsset
+    /**
+     * @notice Allows users to mint eBTC by depositing asset tokens
+     * @param _assetAmountIn Amount of asset tokens to deposit
+     * @param _recipient custom recipient for the minted eBTC
+     * @param _minOutAmount minimum eBTC expected after slippage
+     * @return _ebtcAmountOut Amount of eBTC tokens minted to the user
+     */
     function sellAsset(
         uint256 _assetAmountIn,
-        address _recipient
+        address _recipient,
+        uint256 _minOutAmount
     ) external whenNotPaused returns (uint256 _ebtcAmountOut) {
         return
-            _sellAsset(_assetAmountIn, _recipient, _feeToSell(_assetAmountIn));
+            _sellAsset(_assetAmountIn, _recipient, _feeToSell(_assetAmountIn), _minOutAmount);
     }
 
-    /// @dev Calls the internal function _buyAsset
+    /**
+     * @notice Allows users to buy BSM owned asset tokens by burning their eBTC
+     * @param _ebtcAmountIn Amount of eBTC tokens to burn
+     * @param _recipient custom recipient for the asset
+     * @param _minOutAmount minimum asset tokens expected after slippage
+     * @return _assetAmountOut Amount of asset tokens sent to user
+     */
     function buyAsset(
         uint256 _ebtcAmountIn,
-        address _recipient
+        address _recipient,
+        uint256 _minOutAmount
     ) external whenNotPaused returns (uint256 _assetAmountOut) {
-        return _buyAsset(_ebtcAmountIn, _recipient, _feeToBuy(_ebtcAmountIn));
+        return _buyAsset(_ebtcAmountIn, _recipient, _feeToBuy(_ebtcAmountIn), _minOutAmount);
     }
 
     /**
@@ -269,13 +300,15 @@ contract EbtcBSM is IEbtcBSM, Pausable, Initializable, AuthNoOwner {
      * @dev can only be called by authorized users
      * @param _assetAmountIn Amount of asset tokens to deposit
      * @param _recipient custom recipient for the minted eBTC
+     * @param _minOutAmount minimum eBTC expected after slippage
      * @return _ebtcAmountOut Amount of eBTC tokens minted to the user
      */
     function sellAssetNoFee(
         uint256 _assetAmountIn,
-        address _recipient
+        address _recipient,
+        uint256 _minOutAmount
     ) external whenNotPaused requiresAuth returns (uint256 _ebtcAmountOut) {
-        return _sellAsset(_assetAmountIn, _recipient, 0);
+        return _sellAsset(_assetAmountIn, _recipient, 0, _minOutAmount);
     }
 
     /**
@@ -283,13 +316,15 @@ contract EbtcBSM is IEbtcBSM, Pausable, Initializable, AuthNoOwner {
      * @dev Can only be called by authorized users
      * @param _ebtcAmountIn Amount of eBTC tokens to burn
      * @param _recipient custom recipient for the asset
+     * @param _minOutAmount minimum asset tokens expected after slippage
      * @return _assetAmountOut Amount of asset tokens sent to user
      */
     function buyAssetNoFee(
         uint256 _ebtcAmountIn,
-        address _recipient
+        address _recipient,
+        uint256 _minOutAmount
     ) external whenNotPaused requiresAuth returns (uint256 _assetAmountOut) {
-        return _buyAsset(_ebtcAmountIn, _recipient, 0);
+        return _buyAsset(_ebtcAmountIn, _recipient, 0, _minOutAmount);
     }
 
     /** @notice Sets the fee for selling eBTC

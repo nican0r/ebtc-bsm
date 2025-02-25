@@ -11,7 +11,7 @@ contract BuyAssetTests is BSMTestBase {
 
     function testBuyAssetSuccess() public {
         vm.prank(testMinter);
-        bsmTester.sellAsset(5e18, testMinter);
+        bsmTester.sellAsset(5e18, testMinter, 0);
 
         assertEq(mockAssetToken.balanceOf(testBuyer), 0);
         assertEq(mockEbtcToken.balanceOf(testBuyer), 10e18);
@@ -19,7 +19,7 @@ contract BuyAssetTests is BSMTestBase {
         vm.recordLogs();
         vm.prank(testBuyer);
 
-        assertEq(bsmTester.buyAsset(3e18, testBuyer), 3e18);
+        assertEq(bsmTester.buyAsset(3e18, testBuyer, 0), 3e18);
         Vm.Log[] memory entries = vm.getRecordedLogs();
 
         assertEq(entries[0].topics[0], keccak256("Transfer(address,address,uint256)"));
@@ -38,7 +38,7 @@ contract BuyAssetTests is BSMTestBase {
 
         vm.recordLogs();
         vm.prank(testMinter);
-        bsmTester.sellAsset(5e18, testMinter);
+        bsmTester.sellAsset(5e18, testMinter, 0);
 
         Vm.Log[] memory entries = vm.getRecordedLogs();
 
@@ -52,7 +52,7 @@ contract BuyAssetTests is BSMTestBase {
         vm.expectEmit(true, false, false, false);
         emit AssetBought(1e18, 0, 0);
 
-        assertEq(bsmTester.buyAsset(1e18, testBuyer), 0.99e18);
+        assertEq(bsmTester.buyAsset(1e18, testBuyer, 0), 0.99e18);
 
         assertEq(mockAssetToken.balanceOf(testBuyer), 0.99e18);
         assertEq(mockEbtcToken.balanceOf(testBuyer), 9e18);
@@ -73,17 +73,35 @@ contract BuyAssetTests is BSMTestBase {
         bsmTester.setFeeToBuy(100);
 
         vm.prank(testMinter);
-        bsmTester.sellAsset(5e18, testMinter);
+        bsmTester.sellAsset(5e18, testMinter, 0);
 
         vm.expectEmit();
         emit IEbtcBSM.AssetBought(1e18, 1e18, 0);
 
         vm.prank(testAuthorizedUser);
-        assertEq(bsmTester.buyAssetNoFee(1e18, testAuthorizedUser), 1e18);
+        assertEq(bsmTester.buyAssetNoFee(1e18, testAuthorizedUser, 0), 1e18);
     }
 
     function testBuyAssetFailAboveTotalAssetsDeposited() public {
         vm.expectRevert(abi.encodeWithSelector(EbtcBSM.InsufficientAssetTokens.selector, 1e18, escrow.totalAssetsDeposited()));
-        bsmTester.buyAsset(1e18, address(this));
+        bsmTester.buyAsset(1e18, address(this), 0);
+    }
+
+    function testBuyAssetFailSlippageCheck() public {
+        // 1% fee
+        vm.prank(techOpsMultisig);
+        bsmTester.setFeeToBuy(100);
+
+        vm.prank(testMinter);
+        bsmTester.sellAsset(5e18, testMinter, 0);
+
+        // TEST: fail if actual < expected
+        vm.expectRevert(abi.encodeWithSelector(EbtcBSM.BelowExpectedMinOutAmount.selector, 1e18, 0.99e18));
+        vm.prank(testBuyer);
+        bsmTester.buyAsset(1e18, testBuyer, 1e18);
+
+        // TEST: pass if actual >= expected
+        vm.prank(testBuyer);
+        assertEq(bsmTester.buyAsset(1e18, testMinter, 0.99e18), 0.99e18);
     }
 }

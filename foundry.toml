@@ -11,4 +11,5 @@ remappings = [
     "@chimera/=lib/chimera/src/"
 ]
 
-optimizer=false
+optimizer = true
+optimizer_runs = 200

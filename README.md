@@ -19,3 +19,13 @@ The Oracle Module pauses minting if the asset price drops too much relative to e
 ## Minting Cap
 
 The BSM employs a dynamic minting cap based on the eBTC total supply TWAP, which restricts the amount of eBTC that can be created through asset deposits. This security feature provides controlled exposure to external assets, protecting the system from potential manipulation.
+
+Alternatively, a static minting cap can be used if enabled by governance.
+
+## Build
+
+forge build
+
+## Unit Tests
+
+forge test

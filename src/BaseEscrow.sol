@@ -112,7 +112,8 @@ contract BaseEscrow is AuthNoOwner, IEscrow {
     }
 
     function previewWithdraw(uint256 _assetAmount) external view returns (uint256) {
-        return _previewWithdraw(_assetAmount); /// @audit TODO: Does this account for losses? Prob new Property tests
+        /// @dev derived contracts can override _previewWithdraw to report potential losses
+        return _previewWithdraw(_assetAmount);
     }
 
     /// @notice Called on the source escrow during a migration by the BSM to transfer liquidity
