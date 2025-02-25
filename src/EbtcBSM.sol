@@ -242,7 +242,7 @@ contract EbtcBSM is IEbtcBSM, Pausable, Initializable, AuthNoOwner {
     }
 
     /** 
-     * @notice Canculates the amount of eBTC minted for a given amount of asset tokens accounting
+     * @notice Calculates the amount of eBTC minted for a given amount of asset tokens accounting
      * for all minting constraints
      * @param _assetAmountIn the total amount intended to be deposited
      * @return _ebtcAmountOut the estimated eBTC to mint after fees

@@ -104,4 +104,22 @@ contract BuyAssetTests is BSMTestBase {
         vm.prank(testBuyer);
         assertEq(bsmTester.buyAsset(1e18, testMinter, 0.99e18), 0.99e18);
     }
+
+    function testPreviewBuyAssetAndLiquidity() public {
+        // There is enough liquidity previewBuyAsset
+        // Ensure liquidity
+        // There is not enough liquidity and redeeming will be necessary
+        // Ensure liquidity is not enough
+
+
+        /* Does this ensures liquidity or not?
+            bsmTester_sellAsset(1000171705236471774);
+
+            switch_asset(1);
+
+            asset_mint(0xc7183455a4C133Ae270771860664b6B7ec320bB1,1);
+
+            equivalence_bsm_previewBuyAsset(1);
+        */
+    }
 }
