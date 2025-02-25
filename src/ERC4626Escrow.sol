@@ -121,7 +121,7 @@ contract ERC4626Escrow is BaseEscrow, IERC4626Escrow {
 
             /// @dev using convertToShares + previewRedeem instead of previewWithdraw to round down
             uint256 shares = _clampShares(EXTERNAL_VAULT.convertToShares(deficit));
-            return liquidBalance + EXTERNAL_VAULT.previewRedeem(shares);
+            return liquidBalance + (shares > 0 ? EXTERNAL_VAULT.previewRedeem(shares) : 0);
         } else {
             return _assetAmount;
         }
