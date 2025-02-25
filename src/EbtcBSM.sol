@@ -54,6 +54,12 @@ contract EbtcBSM is IEbtcBSM, Pausable, Initializable, AuthNoOwner {
     /// @notice Error for when the actual output amount is below the expected amount
     error BelowExpectedMinOutAmount(uint256 expected, uint256 actual);
 
+    /// @notice Error for when the amount passed into sellAsset or buyAsset is zero
+    error ZeroAmount();
+
+    /// @notice Error for when the recipient address is the zero address
+    error InvalidRecipientAddress();
+
     /** @notice Constructs the EbtcBSM contract
     * @param _assetToken Address of the underlying asset token
     * @param _oraclePriceConstraint Address of the oracle price constraint
@@ -169,6 +175,9 @@ contract EbtcBSM is IEbtcBSM, Pausable, Initializable, AuthNoOwner {
         uint256 _feeAmount,
         uint256 _minOutAmount
     ) internal returns (uint256 _ebtcAmountOut) {
+        if (_assetAmountIn == 0) revert ZeroAmount();
+        if (_recipient == address(0)) revert InvalidRecipientAddress();
+    
         _ebtcAmountOut = _assetAmountIn - _feeAmount;
 
         _checkMintingConstraints(_ebtcAmountOut);
@@ -200,6 +209,9 @@ contract EbtcBSM is IEbtcBSM, Pausable, Initializable, AuthNoOwner {
         uint256 _feeAmount,
         uint256 _minOutAmount
     ) internal returns (uint256 _assetAmountOut) {
+        if (_ebtcAmountIn == 0) revert ZeroAmount();
+        if (_recipient == address(0)) revert InvalidRecipientAddress();
+
         _checkTotalAssetsDeposited(_ebtcAmountIn);
 
         EBTC_TOKEN.burn(msg.sender, _ebtcAmountIn);
@@ -217,12 +229,14 @@ contract EbtcBSM is IEbtcBSM, Pausable, Initializable, AuthNoOwner {
             revert BelowExpectedMinOutAmount(_minOutAmount, _assetAmountOut);
         }
 
-        // INVARIANT: _assetAmountOut <= _ebtcAmountIn
-        ASSET_TOKEN.safeTransferFrom(
-            address(escrow),
-            _recipient,
-            _assetAmountOut
-        );
+        if (_assetAmountOut > 0) {
+            // INVARIANT: _assetAmountOut <= _ebtcAmountIn
+            ASSET_TOKEN.safeTransferFrom(
+                address(escrow),
+                _recipient,
+                _assetAmountOut
+            );
+        }
 
         emit AssetBought(_ebtcAmountIn, _assetAmountOut, _feeAmount);
     }
