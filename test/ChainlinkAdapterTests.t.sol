@@ -30,11 +30,10 @@ contract tBTCChainlinkAdapterTests is Test {
         btcUsdAggregator.setUpdateTime(1706208947);
 
         (
-            uint80 roundId,
+            ,
             int256 answer,
-            uint256 startedAt,
+            ,
             uint256 updatedAt,
-            uint80 answeredInRound
         ) = tBTCchainlinkAdapter.latestRoundData();
 
         assertEq(answer, 55482551396170026);
