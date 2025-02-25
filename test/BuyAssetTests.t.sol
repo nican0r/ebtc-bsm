@@ -106,20 +106,42 @@ contract BuyAssetTests is BSMTestBase {
     }
 
     function testPreviewBuyAssetAndLiquidity() public {
-        // There is enough liquidity previewBuyAsset
-        // Ensure liquidity
-        // There is not enough liquidity and redeeming will be necessary
-        // Ensure liquidity is not enough
+        uint256 withdrawAmount = 3e18;
+        // With liquidity
+        vm.prank(testMinter);
+        bsmTester.sellAsset(5e18, testMinter, 0);
+        
+        uint256 liquidBalance = mockAssetToken.balanceOf(address(escrow));
+        // Ensure liquidity surplus
+        assertGt(liquidBalance, withdrawAmount);
+        // Preview withdraw does not redeem
+        uint256 beforeShares = externalVault.balanceOf(address(escrow));
+        uint256 amtOut = bsmTester.previewBuyAsset(withdrawAmount);
+        vm.prank(testBuyer);
+        uint256 realOut = bsmTester.buyAsset(withdrawAmount, testBuyer, 0);
+        uint256 afterShares = externalVault.balanceOf(address(escrow));
 
+        assertEq(amtOut, realOut);
+        assertEq(afterShares, beforeShares);// No redeem happened
 
-        /* Does this ensures liquidity or not?
-            bsmTester_sellAsset(1000171705236471774);
+        // With no liquidity
+        withdrawAmount = 2e18;
+        uint256 shares = externalVault.previewDeposit(2e18);
+        vm.prank(techOpsMultisig);
+        escrow.depositToExternalVault(withdrawAmount, shares);
+        liquidBalance = mockAssetToken.balanceOf(address(escrow));
+        // Ensure liquidity deficit
+        assertGt(withdrawAmount, liquidBalance);
 
-            switch_asset(1);
+        // Preview withdraw should take into account redeem amount
+        beforeShares = externalVault.balanceOf(address(escrow));
+        amtOut = bsmTester.previewBuyAsset(withdrawAmount);
+        vm.prank(testBuyer);
+        realOut = bsmTester.buyAsset(withdrawAmount, testBuyer, 0);
 
-            asset_mint(0xc7183455a4C133Ae270771860664b6B7ec320bB1,1);
+        afterShares = externalVault.balanceOf(address(escrow));
 
-            equivalence_bsm_previewBuyAsset(1);
-        */
+        assertEq(amtOut, realOut);
+        assertLt(afterShares, beforeShares);// Redeem happened
     }
 }
