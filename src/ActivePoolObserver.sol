@@ -43,7 +43,7 @@ contract ActivePoolObserver {
      *      Uses the formula: (newAcc - acc0) / (now - t0).
      * @param data The packed data containing the last observed cumulative value and timestamp.
      * @param period observation period
-     * @return returns true if we are past the current observaion period
+     * @return returns true if we are past the current observation period
     */
     function _checkUpdatePeriod(ITwapWeightedObserver.PackedData memory data, uint256 period) internal view returns (bool) {
         return block.timestamp >= (data.lastObserved + period);

@@ -104,4 +104,44 @@ contract BuyAssetTests is BSMTestBase {
         vm.prank(testBuyer);
         assertEq(bsmTester.buyAsset(1e18, testMinter, 0.99e18), 0.99e18);
     }
+
+    function testPreviewBuyAssetAndLiquidity() public {
+        uint256 withdrawAmount = 3e18;
+        // With liquidity
+        vm.prank(testMinter);
+        bsmTester.sellAsset(5e18, testMinter, 0);
+        
+        uint256 liquidBalance = mockAssetToken.balanceOf(address(escrow));
+        // Ensure liquidity surplus
+        assertGt(liquidBalance, withdrawAmount);
+        // Preview withdraw does not redeem
+        uint256 beforeShares = externalVault.balanceOf(address(escrow));
+        uint256 amtOut = bsmTester.previewBuyAsset(withdrawAmount);
+        vm.prank(testBuyer);
+        uint256 realOut = bsmTester.buyAsset(withdrawAmount, testBuyer, 0);
+        uint256 afterShares = externalVault.balanceOf(address(escrow));
+
+        assertEq(amtOut, realOut);
+        assertEq(afterShares, beforeShares);// No redeem happened
+
+        // With no liquidity
+        withdrawAmount = 2e18;
+        uint256 shares = externalVault.previewDeposit(2e18);
+        vm.prank(techOpsMultisig);
+        escrow.depositToExternalVault(withdrawAmount, shares);
+        liquidBalance = mockAssetToken.balanceOf(address(escrow));
+        // Ensure liquidity deficit
+        assertGt(withdrawAmount, liquidBalance);
+
+        // Preview withdraw should take into account redeem amount
+        beforeShares = externalVault.balanceOf(address(escrow));
+        amtOut = bsmTester.previewBuyAsset(withdrawAmount);
+        vm.prank(testBuyer);
+        realOut = bsmTester.buyAsset(withdrawAmount, testBuyer, 0);
+
+        afterShares = externalVault.balanceOf(address(escrow));
+
+        assertEq(amtOut, realOut);
+        assertLt(afterShares, beforeShares);// Redeem happened
+    }
 }
